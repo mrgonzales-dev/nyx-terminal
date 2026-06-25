@@ -49,7 +49,7 @@ Slide the settings gear in the navbar to dial in terminal transparency. Persiste
 - **Terminal gaps** — Visual breathing room between panes (configurable)
 - **Rename panes** — Click a title to rename. Names persist
 - **Active pane glow** — Focused pane gets a lighter border with a purple glow
-- **Copy / paste** — Right-click to copy or paste, or use `Ctrl+Shift+C` / `Ctrl+Shift+V`
+- **Copy / paste** — Browser-based (right-click + Ctrl+Shift+C/V) + tmux OSC 52 integration (tmux copy mode works)
 - **4-pane cap** — Max four terminals by design. Keeps things focused
 - **Electron desktop** — Tray icon, native integrations, runs locally
 

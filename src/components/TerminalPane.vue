@@ -56,6 +56,8 @@ let ws = null
 let reconnectAttempts = 0
 let reconnectTimer = null
 let disposed = false
+let clipboardWriteTimer = null
+let lastClipboardText = ''
 
 const terminalConfig = {
   theme: {
@@ -106,7 +108,11 @@ function onContextMenu(e) {
   e.preventDefault()
   e.stopPropagation()
   if (term && term.hasSelection()) {
-    navigator.clipboard.writeText(term.getSelection()).catch(() => {})
+    const selection = term.getSelection()
+    if (selection && selection !== lastClipboardText) {
+      lastClipboardText = selection
+      navigator.clipboard.writeText(selection).catch(() => {})
+    }
     term.clearSelection()
   } else if (term) {
     navigator.clipboard.readText().then((text) => {
@@ -142,6 +148,27 @@ function connectWs() {
   }
 
   ws.onmessage = (event) => {
+    // Check for OSC 52 clipboard sequences from tmux
+    // Actual format from tmux: ]52;;<base64_data> (no \x1b prefix, no \x07 suffix, empty selector)
+    const osc52Match = event.data.match(/\]52;;([^\x07\x1b]+)/)
+    if (osc52Match) {
+      try {
+        const base64Data = osc52Match[1]
+        const text = atob(base64Data)
+        // Only write if text is non-empty, not just whitespace, and different from last write
+        if (text && text.trim() && text !== lastClipboardText) {
+          lastClipboardText = text
+          // Debounce clipboard writes to prevent duplicates from tmux
+          if (clipboardWriteTimer) clearTimeout(clipboardWriteTimer)
+          clipboardWriteTimer = setTimeout(() => {
+            navigator.clipboard.writeText(text).catch(() => {})
+          }, 100) // 100ms debounce
+        }
+      } catch (e) {
+        // Invalid base64, ignore
+      }
+      return // Don't write OSC 52 to terminal
+    }
     term.write(event.data)
   }
 
@@ -199,7 +226,11 @@ onMounted(() => {
     // Ctrl+Shift+C → Copy
     if (ev.ctrlKey && ev.shiftKey && (ev.key === 'C' || ev.key === 'c')) {
       if (term.hasSelection()) {
-        navigator.clipboard.writeText(term.getSelection()).catch(() => {})
+        const selection = term.getSelection()
+        if (selection && selection !== lastClipboardText) {
+          lastClipboardText = selection
+          navigator.clipboard.writeText(selection).catch(() => {})
+        }
       }
       return false
     }
