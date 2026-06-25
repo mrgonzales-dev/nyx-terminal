@@ -168,12 +168,11 @@ wss.on('connection', (ws, req) => {
 if [ -n "$BASH_VERSION" ]; then
   __nyx_osc7() { printf '\\e]7;file://${hostname}%s\\a' "$PWD"; }
   PROMPT_COMMAND="__nyx_osc7${'${PROMPT_COMMAND:+;$PROMPT_COMMAND}'}"
-  __nyx_osc7
 elif [ -n "$ZSH_VERSION" ]; then
   __nyx_osc7() { printf '\\e]7;file://${hostname}%s\\a' "$PWD"; }
   chpwd_functions+=(__nyx_osc7)
-  __nyx_osc7
 fi
+__nyx_osc7; clear
 `;
   ptyProcess.write(osc7Init + '\n');
 

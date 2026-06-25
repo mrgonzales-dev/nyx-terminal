@@ -1,4 +1,13 @@
 <template>
+  <Transition name="loader-fade">
+    <div v-if="loading" class="loader-overlay">
+      <div class="loader-logo">
+        <span class="loader-bracket">&gt;</span><span class="loader-underscore">_</span>
+        <h1 class="loader-name">NYX</h1>
+        <span class="loader-sub">terminal</span>
+      </div>
+    </div>
+  </Transition>
   <Banner :opacity="opacity" @update:opacity="opacity = $event" />
   <main class="main-content">
     <div class="terminals-area" ref="areaRef">
@@ -48,6 +57,7 @@ const opacity = ref(85)
 const activeTerminalId = ref(null)
 const terminalRefs = ref({})
 const areaRef = ref(null)
+const loading = ref(true)
 let terminalCounter = 0
 const MAX_TERMINALS = 4
 
@@ -339,6 +349,9 @@ onMounted(async () => {
   opacity.value = session.opacity ?? 85
   sessionLoaded = true
   nextTick(onPanelsResize)
+
+  // Hold loader for 3s so the OSC 7 snippet clears before terminals show
+  setTimeout(() => { loading.value = false }, 3000)
 })
 
 onUnmounted(() => {
@@ -362,5 +375,76 @@ onUnmounted(() => {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Loading screen */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0a0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: loader-pulse 1.6s ease-in-out infinite;
+}
+
+.loader-bracket {
+  font-family: 'JetBrainsMono Nerd Font', monospace;
+  font-size: 42px;
+  font-weight: 900;
+  color: #a78bfa;
+  line-height: 1;
+}
+
+.loader-underscore {
+  font-family: 'JetBrainsMono Nerd Font', monospace;
+  font-size: 42px;
+  font-weight: 900;
+  color: #a78bfa;
+  line-height: 1;
+  animation: loader-blink 1s step-end infinite;
+}
+
+.loader-name {
+  font-family: 'JetBrainsMono Nerd Font', monospace;
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 8px;
+  margin-top: 12px;
+}
+
+.loader-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+@keyframes loader-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes loader-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.loader-fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.loader-fade-leave-to {
+  opacity: 0;
 }
 </style>
