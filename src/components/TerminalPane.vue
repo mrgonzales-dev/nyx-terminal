@@ -58,6 +58,7 @@ let reconnectTimer = null
 let disposed = false
 let clipboardWriteTimer = null
 let lastClipboardText = ''
+let cursorInterval = null
 
 const terminalConfig = {
   theme: {
@@ -219,6 +220,18 @@ onMounted(() => {
   term.options.cursorWidth = 8
   term.options.cursorBlink = false // Disable blink to ensure visibility
 
+  // Force cursor class to block (nvim compatibility)
+  const forceBlockCursor = () => {
+    const cursor = terminalRef.value?.querySelector('.xterm-cursor')
+    if (cursor) {
+      cursor.classList.remove('xterm-cursor-outline', 'xterm-cursor-bar', 'xterm-cursor-underline')
+      cursor.classList.add('xterm-cursor-block')
+    }
+  }
+  // Force immediately and then periodically
+  forceBlockCursor()
+  cursorInterval = setInterval(forceBlockCursor, 100)
+
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
     emit('focus', props.id)
@@ -251,6 +264,8 @@ onUnmounted(() => {
     try { ws.close() } catch (e) {}
   }
   term?.dispose()
+  // Clear cursor interval
+  if (cursorInterval) clearInterval(cursorInterval)
 })
 </script>
 
