@@ -15,7 +15,7 @@ A web-based terminal. Access your real terminal from the browser with full files
 ## Installation
 
 ```bash
-cd ~/Projects/web-terminal-hud
+cd ~/Projects/nyx-terminal
 npm install
 ```
 
