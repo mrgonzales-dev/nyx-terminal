@@ -2,6 +2,8 @@
 
 A web-based terminal with Hermes background. Access your real terminal from the browser with full filesystem access.
 
+![Sample](readme_src/sample.png)
+
 ## Features
 
 - **Real PTY**: Full terminal emulation with node-pty
