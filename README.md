@@ -6,16 +6,17 @@ A web-based terminal emulator with i3-style tiling splits, Electron desktop app 
 
 ## Features
 
-- **i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Each terminal gets its own resizable pane.
+- **i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Running apps (htop, nvim) survive splits — flat rendering with stable keys prevents component destruction.
 - **Real PTY**: Full terminal emulation with node-pty — not a fake terminal
-- **Split Inherits CWD**: Splitting a terminal opens the new one in the same directory (via `/proc/<pid>/cwd`)
-- **New Terminal**: Quick-add button defaults to home directory
+- **Split Inherits CWD**: Splitting a terminal opens the new one in the same directory via OSC 7 tracking (tmux-grade, works even with foreground apps running)
+- **Terminal Gaps**: Visual breathing room between terminals (configurable via GAP constant)
 - **Terminal Renaming**: Click the title to rename. Names persist across sessions.
 - **Active Terminal Glow**: Focused terminal gets a lighter border with purple glow
 - **Opacity Control**: Settings gear in the navbar — slide to adjust terminal transparency
 - **Copy/Paste**: Right-click to copy selection or paste. Ctrl+Shift+C/V shortcuts.
-- **Session Persistence**: Terminals, layout tree, names, opacity — all saved and restored
+- **Session Persistence**: Terminals, layout tree, names, opacity — all saved and restored. Orphaned terminals cleaned on load.
 - **Auto-Reconnect**: WebSocket disconnects trigger exponential backoff reconnect
+- **4-Terminal Limit**: Max 4 terminals by design. Split and New Terminal buttons disabled at cap.
 - **Security**: Server binds to 127.0.0.1 only, origin checking on WebSocket
 - **Electron Ready**: Desktop app with tray icon, native integrations
 
@@ -120,12 +121,13 @@ nyx-terminal/
 │   └── components/
 │       ├── Banner.vue     # Top navbar with Nyx branding + settings gear
 │       ├── Settings.vue   # Opacity slider dropdown
-│       ├── SplitNode.vue  # Recursive tiling layout (splits + leaves)
 │       ├── TerminalPane.vue # xterm terminal + header + copy/paste
 │       ├── SplitButton.vue  # Split dropdown (horizontal/vertical)
 │       └── FooterBar.vue  # New Terminal + Save buttons
 ├── setAsides/             # Removed features kept for reference
-│   └── fileTree/          # File tree panel (removed from active UI)
+│   ├── fileTree/          # File tree panel (removed from active UI)
+│   ├── ResizablePanels.vue # Old resizable panels (replaced by flat rendering)
+│   └── SplitNode.vue      # Old recursive layout (replaced by flat rendering)
 └── public/
     ├── assets/            # Favicon, background image
     └── fonts/             # JetBrainsMono Nerd Font

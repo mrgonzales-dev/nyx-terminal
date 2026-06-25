@@ -88,6 +88,20 @@ app.post('/api/session', (req, res) => {
   res.json({ ok: true });
 });
 
+// HTTP getcwd endpoint — read cwd from /proc without polluting the PTY
+app.get('/api/cwd', (req, res) => {
+  const pid = parseInt(req.query.pid, 10);
+  if (!pid) {
+    return res.status(400).json({ error: 'Missing pid' });
+  }
+  try {
+    const cwd = fs.readlinkSync(`/proc/${pid}/cwd`);
+    res.json({ cwd });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not read cwd', cwd: null });
+  }
+});
+
 // Track active PTY processes for cleanup
 const activePtys = new Set();
 
@@ -145,10 +159,41 @@ wss.on('connection', (ws, req) => {
 
   activePtys.add(ptyProcess);
 
-  // Send PTY output to WebSocket
+  // OSC 7 cwd tracking — emit \e]7;file://host/path\a on every dir change.
+  // This is what Kitty/WezTerm/VS Code use; works even when a foreground app
+  // (htop, nvim) is running because the shell hook fires on prompt/chpwd.
+  const hostname = os.hostname();
+  const osc7Init = `
+if [ -n "$BASH_VERSION" ]; then
+  __nyx_osc7() { printf '\\e]7;file://${hostname}%s\\a' "$PWD"; }
+  PROMPT_COMMAND="__nyx_osc7${'${PROMPT_COMMAND:+;$PROMPT_COMMAND}'}"
+  __nyx_osc7
+elif [ -n "$ZSH_VERSION" ]; then
+  __nyx_osc7() { printf '\\e]7;file://${hostname}%s\\a' "$PWD"; }
+  chpwd_functions+=(__nyx_osc7)
+  __nyx_osc7
+fi
+`;
+  ptyProcess.write(osc7Init + '\n');
+
+  let currentCwd = initialCwd;
+  let ptyBuffer = '';
+
+  // Send PTY output to WebSocket + parse OSC 7 for cwd tracking
   ptyProcess.on('data', (data) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(data);
+    }
+    // Parse OSC 7: \x1b]7;file://hostname/path\x07
+    ptyBuffer += data.toString('utf8');
+    const osc7Regex = /\x1b\]7;file:\/\/[^\/]*([^\x07\x1b]*)\x07/g;
+    let match;
+    while ((match = osc7Regex.exec(ptyBuffer)) !== null) {
+      const p = decodeURIComponent(match[1]);
+      if (p) currentCwd = p;
+    }
+    if (ptyBuffer.length > 256) {
+      ptyBuffer = ptyBuffer.slice(-256);
     }
   });
 
@@ -159,13 +204,13 @@ wss.on('connection', (ws, req) => {
       if (data.type === 'resize') {
         ptyProcess.resize(data.cols, data.rows);
       } else if (data.type === 'getcwd') {
-        // Read actual cwd from /proc/<pid>/cwd — no PTY pollution
-        try {
-          const cwd = fs.readlinkSync(`/proc/${ptyProcess.pid}/cwd`);
-          ws.send(JSON.stringify({ type: 'cwd', cwd }));
-        } catch (e) {
-          ws.send(JSON.stringify({ type: 'cwd', cwd: initialCwd }));
+        let cwd = currentCwd;
+        if (!cwd) {
+          try {
+            cwd = fs.readlinkSync(`/proc/${ptyProcess.pid}/cwd`);
+          } catch (e) {}
         }
+        ws.send(JSON.stringify({ type: 'cwd', cwd }));
       }
     } catch (e) {
       // Not JSON, send directly to PTY (raw terminal input)

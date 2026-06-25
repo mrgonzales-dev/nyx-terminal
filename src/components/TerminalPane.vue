@@ -57,7 +57,7 @@ let ws = null
 let reconnectAttempts = 0
 let reconnectTimer = null
 let disposed = false
-let cwdResolve = null
+let pendingCwdResolve = null
 
 const terminalConfig = {
   theme: {
@@ -146,13 +146,13 @@ function connectWs() {
   }
 
   ws.onmessage = (event) => {
-    // Try to parse as JSON (server control messages like cwd response)
+    // Intercept JSON control messages (cwd response)
     if (typeof event.data === 'string' && event.data.startsWith('{')) {
       try {
         const parsed = JSON.parse(event.data)
-        if (parsed.type === 'cwd' && cwdResolve) {
-          cwdResolve(parsed.cwd)
-          cwdResolve = null
+        if (parsed.type === 'cwd') {
+          pendingCwdResolve?.(parsed.cwd)
+          pendingCwdResolve = null
           return
         }
       } catch (e) {
@@ -192,21 +192,20 @@ function reconnect() {
   connectWs()
 }
 
-// Get current working directory from server (via /proc/<pid>/cwd)
-function getCwd() {
+// Get current working directory via WS control message (server reads OSC 7
+// state or /proc/<pid>/cwd — no HTTP roundtrip, no PID race condition)
+async function getCwd() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return null
   return new Promise((resolve) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    const timeout = setTimeout(() => {
+      pendingCwdResolve = null
       resolve(null)
-      return
-    }
-    cwdResolve = resolve
-    ws.send(JSON.stringify({ type: 'getcwd' }))
-    setTimeout(() => {
-      if (cwdResolve) {
-        cwdResolve(null)
-        cwdResolve = null
-      }
     }, 2000)
+    pendingCwdResolve = (cwd) => {
+      clearTimeout(timeout)
+      resolve(cwd)
+    }
+    ws.send(JSON.stringify({ type: 'getcwd' }))
   })
 }
 

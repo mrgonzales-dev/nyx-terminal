@@ -109,7 +109,7 @@ onUnmounted(() => {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  gap: 8px;
+  gap: 5px;
 }
 
 .resizable-panels.horizontal {

@@ -10,7 +10,7 @@
           :canClose="terminals.length > 1"
           :isActive="activeTerminalId === cell.leaf.terminalId"
           :maxReached="terminals.length >= MAX_TERMINALS"
-          :ref="(el) => { if (el) terminalRefs[cell.leaf.terminalId] = el }"
+          :ref="(el) => { if (el) terminalRefs[cell.leaf.terminalId] = el; else delete terminalRefs[cell.leaf.terminalId] }"
           :style="{
             position: 'absolute',
             left: cell.x + '%',
@@ -66,7 +66,7 @@ const GAP = 0.4 // % gap between terminals
 
 function flattenTree(node, x, y, w, h) {
   if (node.type === 'leaf') {
-    return [{ leaf: node, x: x + GAP, y: y + GAP, w: w - GAP * 2, h: h - GAP * 2 }]
+    return [{ leaf: node, x: x + GAP, y: y + GAP, w: Math.max(0, w - GAP * 2), h: Math.max(0, h - GAP * 2) }]
   }
   if (!node.children || node.children.length === 0) return []
   if (node.children.length === 1) {
@@ -235,6 +235,11 @@ function closeTerminal(id) {
 
   removeFromTree(layout.value)
 
+  // Collapse root if it has a single child
+  if (layout.value.type === 'split' && layout.value.children.length === 1) {
+    layout.value = layout.value.children[0]
+  }
+
   // Remove from terminals
   terminals.value = terminals.value.filter(t => t.id !== id)
   delete terminalRefs.value[id]
@@ -276,6 +281,12 @@ function deserializeLayout(node) {
   }
 }
 
+// Get all terminal IDs referenced in a layout tree
+function getTerminalIdsFromLayout(node) {
+  if (node.type === 'leaf') return [node.terminalId]
+  return (node.children || []).flatMap(getTerminalIdsFromLayout)
+}
+
 async function saveSession() {
   await save({
     terminals: terminals.value.map(t => ({ id: t.id, name: t.name, cwd: t.cwd })),
@@ -315,6 +326,10 @@ onMounted(async () => {
         sizes: session.terminals.map(() => 100 / session.terminals.length)
       }
     }
+
+    // Remove orphaned terminals not referenced in layout
+    const layoutIds = new Set(getTerminalIdsFromLayout(layout.value))
+    terminals.value = terminals.value.filter(t => layoutIds.has(t.id))
 
     activeTerminalId.value = terminals.value[0]?.id || null
   } else {

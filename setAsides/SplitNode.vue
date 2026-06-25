@@ -1,51 +1,46 @@
 <template>
   <div
     class="split-node"
-    :class="node.type === 'split' ? node.direction : ''"
+    :class="node.direction === 'vertical' ? 'vertical' : 'horizontal'"
     ref="containerRef"
   >
-    <template v-if="node.type === 'leaf'">
-      <div class="leaf-wrapper">
+    <template v-for="(child, index) in nodeChildren" :key="child.type === 'leaf' ? 'leaf-' + child.terminalId : 'split-' + index">
+      <div class="child-panel" :style="getPanelStyle(index)">
         <TerminalPane
-          :id="terminal.id"
-          :name="terminal.name"
-          :cwd="terminal.cwd"
+          v-if="child.type === 'leaf'"
+          :id="terminalFor(child).id"
+          :name="terminalFor(child).name"
+          :cwd="terminalFor(child).cwd"
           :canClose="canClose"
-          :isActive="activeId === terminal.id"
+          :isActive="activeId === terminalFor(child).id"
           :maxReached="maxReached"
-          :ref="el => setRef(terminal.id, el)"
-          @close="$emit('close', terminal.id)"
+          :ref="el => setRef(terminalFor(child).id, el)"
+          @close="$emit('close', terminalFor(child).id)"
           @rename="(id, name) => $emit('rename', id, name)"
           @split="(id, dir) => $emit('split', id, dir)"
           @focus="(id) => $emit('focus', id)"
         />
+        <SplitNode
+          v-else
+          :node="child"
+          :terminals="terminals"
+          :terminalRefs="terminalRefs"
+          :canClose="canClose"
+          :activeId="activeId"
+          :maxReached="maxReached"
+          @close="$emit('close', $event)"
+          @rename="(id, name) => $emit('rename', id, name)"
+          @split="(id, dir) => $emit('split', id, dir)"
+          @focus="$emit('focus', $event)"
+          @resize="$emit('resize')"
+        />
       </div>
-    </template>
-
-    <template v-else>
-      <template v-for="(child, index) in node.children" :key="child.type === 'leaf' ? 'leaf-' + child.terminalId : 'split-' + index">
-        <div class="child-panel" :style="getPanelStyle(index)">
-          <SplitNode
-            :node="child"
-            :terminals="terminals"
-            :terminalRefs="terminalRefs"
-            :canClose="canClose"
-            :activeId="activeId"
-            :maxReached="maxReached"
-            @close="$emit('close', $event)"
-            @rename="(id, name) => $emit('rename', id, name)"
-            @split="(id, dir) => $emit('split', id, dir)"
-            @focus="$emit('focus', $event)"
-            @resize="$emit('resize')"
-          />
-        </div>
-        <div
-          v-if="index < node.children.length - 1"
-          class="resizer"
-          :class="node.direction === 'vertical' ? 'resizer-vertical' : 'resizer-horizontal'"
-          @mousedown="startResize($event, index)"
-        ></div>
-      </template>
+      <div
+        v-if="index < nodeChildren.length - 1"
+        class="resizer"
+        :class="node.direction === 'vertical' ? 'resizer-vertical' : 'resizer-horizontal'"
+        @mousedown="startResize($event, index)"
+      ></div>
     </template>
   </div>
 </template>
@@ -71,20 +66,23 @@ const resizeIndex = ref(-1)
 const startPos = ref(0)
 const startSizes = ref([])
 
-// Find terminal object for this leaf
-const terminal = computed(() => {
-  if (props.node.type !== 'leaf') return {}
-  return props.terminals.find(t => t.id === props.node.terminalId) || {}
+// Normalize node to always have children array (leaf → single-child split)
+const nodeChildren = computed(() => {
+  if (props.node.type === 'leaf') {
+    return [props.node]
+  }
+  return props.node.children || []
 })
+
+// Find terminal object for a leaf child
+function terminalFor(child) {
+  if (child.type !== 'leaf') return {}
+  return props.terminals.find(t => t.id === child.terminalId) || {}
+}
 
 // Local sizes (init from node or equal split)
 const sizes = ref([])
-watch(() => {
-  if (props.node.type === 'split') {
-    return props.node.children.length
-  }
-  return 0
-}, (len) => {
+watch(() => nodeChildren.value.length, (len) => {
   if (len > 0) {
     if (props.node.sizes && props.node.sizes.length === len) {
       sizes.value = [...props.node.sizes]
@@ -182,15 +180,6 @@ onUnmounted(() => {
 
 .split-node.vertical {
   flex-direction: column;
-}
-
-.leaf-wrapper {
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
 }
 
 .child-panel {
