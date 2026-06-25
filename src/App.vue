@@ -150,34 +150,27 @@ function findParent(node, id) {
   return null
 }
 
+// Deep clone the layout so Vue sees a new reference
+function cloneLayout(node) {
+  if (node.type === 'leaf') return { type: 'leaf', terminalId: node.terminalId }
+  return {
+    type: 'split',
+    direction: node.direction,
+    children: node.children.map(cloneLayout),
+    sizes: [...(node.sizes || [])]
+  }
+}
+
 // Split: insert new leaf as sibling in the tree
-async function splitTerminal(terminalId, direction) {
+function splitTerminal(terminalId, direction) {
   const id = terminalId || activeTerminalId.value
   if (!id) return
   if (terminals.value.length >= MAX_TERMINALS) return
 
   activeTerminalId.value = id
+  const sourceTerm = terminals.value.find(t => t.id === id)
+  const cwd = sourceTerm?.cwd || null
 
-  // Get live cwd from the source terminal's PTY (with timeout fallback)
-  let cwd = null
-  const termRef = terminalRefs.value[id]
-  if (termRef && termRef.getCwd) {
-    try {
-      cwd = await Promise.race([
-        termRef.getCwd(),
-        new Promise(r => setTimeout(() => r(null), 1000))
-      ])
-    } catch (e) {
-      cwd = null
-    }
-  }
-  // Fallback to stored cwd if live fetch failed
-  if (!cwd) {
-    const sourceTerm = terminals.value.find(t => t.id === id)
-    cwd = sourceTerm?.cwd || null
-  }
-
-  // Find the leaf in the tree and determine where to insert
   const parent = findParent(layout.value, id)
   let idx = -1
   let targetParent = null
@@ -192,17 +185,27 @@ async function splitTerminal(terminalId, direction) {
     targetParent = parent
   }
 
-  // Create terminal AFTER validation (avoids orphans)
   const newId = createTerminal(cwd)
 
-  if (targetParent.direction === direction) {
-    // Same direction — add sibling directly
-    targetParent.children.splice(idx + 1, 0, { type: 'leaf', terminalId: newId })
-    const equal = 100 / targetParent.children.length
-    targetParent.sizes = Array(targetParent.children.length).fill(equal)
+  // Clone entire layout tree, apply mutation to clone, then replace
+  const newLayout = cloneLayout(layout.value)
+
+  // Find the corresponding parent in the cloned tree
+  const cloneParent = parent ? findParent(newLayout, id) : newLayout
+  const cloneIdx = cloneParent.children.findIndex(c => c.type === 'leaf' && c.terminalId === id)
+
+  // Critical: validate that we found the leaf in the cloned tree
+  if (cloneIdx === -1) {
+    console.error('[splitTerminal] Failed to find leaf in cloned tree', { id, cloneParent })
+    return
+  }
+
+  if (cloneParent.direction === direction) {
+    cloneParent.children.splice(cloneIdx + 1, 0, { type: 'leaf', terminalId: newId })
+    const equal = 100 / cloneParent.children.length
+    cloneParent.sizes = Array(cloneParent.children.length).fill(equal)
   } else {
-    // Different direction — wrap old + new in a nested split
-    targetParent.children[idx] = {
+    cloneParent.children[cloneIdx] = {
       type: 'split',
       direction,
       children: [
@@ -211,9 +214,10 @@ async function splitTerminal(terminalId, direction) {
       ],
       sizes: [50, 50]
     }
-    targetParent.sizes = Array(targetParent.children.length).fill(100 / targetParent.children.length)
+    cloneParent.sizes = Array(cloneParent.children.length).fill(100 / cloneParent.children.length)
   }
 
+  layout.value = newLayout
   activeTerminalId.value = newId
   nextTick(onPanelsResize)
 }
