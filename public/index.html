@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nyx</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,13 +12,13 @@
   <style>
     @font-face {
       font-family: 'JetBrainsMono Nerd Font';
-      src: url('/JetBrainsMonoNerdFont-Regular.ttf') format('truetype');
+      src: url('/fonts/JetBrainsMonoNerdFont-Regular.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
     @font-face {
       font-family: 'JetBrainsMono Nerd Font';
-      src: url('/JetBrainsMonoNerdFont-Bold.ttf') format('truetype');
+      src: url('/fonts/JetBrainsMonoNerdFont-Bold.ttf') format('truetype');
       font-weight: bold;
       font-style: normal;
     }
@@ -39,7 +39,7 @@
     body {
       display: flex;
       flex-direction: column;
-      background: url('/nyx-bg.png') center center / cover no-repeat;
+      background: url('/assets/nyx-bg.png') center center / cover no-repeat;
       background-color: #0a0a0f;
     }
 
@@ -263,6 +263,28 @@
     .tree-indent {
       display: inline-block;
       width: 16px;
+    }
+
+    .tree-toggle {
+      display: inline-block;
+      width: 12px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.4);
+      transition: transform 0.15s ease;
+    }
+
+    .tree-children {
+      margin-left: 4px;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding-left: 8px;
+    }
+
+    .tree-icon {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      vertical-align: middle;
+      margin-right: 6px;
     }
 
     /* Footer Buttons */
@@ -664,6 +686,10 @@
       }
     }
 
+    // SVG icons
+    const folderIcon = `<svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`;
+    const fileIcon = `<svg class="tree-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+
     // Render tree data
     function renderTree(data) {
       if (!data || !data.items) {
@@ -671,16 +697,62 @@
         return;
       }
       
-      treeContent.innerHTML = data.items.map(item => {
-        const indent = '<span class="tree-indent"></span>'.repeat(item.depth || 0);
-        const icon = item.type === 'dir' ? '\uf07b ' : '\uf15b ';
-        const cls = item.type === 'dir' ? 'tree-folder' : 'tree-file';
-        return `<div class="tree-item ${cls}" data-path="${item.path}">${indent}${icon}${item.name}</div>`;
-      }).join('');
+      // Group items by parent folder
+      const tree = {};
+      data.items.forEach(item => {
+        if (item.depth === 0) {
+          if (item.type === 'dir') {
+            tree[item.path] = { item, children: [] };
+          } else {
+            tree[item.path] = { item, children: null };
+          }
+        } else {
+          // Find parent
+          const parentPath = Object.keys(tree).find(p => item.path.startsWith(p + '/'));
+          if (parentPath && tree[parentPath].children) {
+            tree[parentPath].children.push(item);
+          }
+        }
+      });
 
-      treeContent.querySelectorAll('.tree-folder').forEach(el => {
-        el.addEventListener('click', () => {
-          loadTree(el.dataset.path);
+      let html = '';
+      Object.values(tree).forEach(({ item, children }) => {
+        if (item.type === 'dir') {
+          const folderId = 'folder-' + btoa(item.path).replace(/[^a-zA-Z0-9]/g, '');
+          html += `<div class="tree-item tree-folder" data-path="${item.path}" data-folder-id="${folderId}">
+            <span class="tree-toggle">&#9654;</span>${folderIcon}${item.name}
+          </div>`;
+          html += `<div class="tree-children" id="${folderId}" style="display: none;">`;
+          if (children && children.length > 0) {
+            children.forEach(child => {
+              const icon = child.type === 'dir' ? folderIcon : fileIcon;
+              const cls = child.type === 'dir' ? 'tree-folder' : 'tree-file';
+              html += `<div class="tree-item ${cls}" data-path="${child.path}"><span class="tree-indent"></span>${icon}${child.name}</div>`;
+            });
+          } else {
+            html += `<div class="tree-item" style="color: rgba(255,255,255,0.3);"><span class="tree-indent"></span>(empty)</div>`;
+          }
+          html += `</div>`;
+        } else {
+          html += `<div class="tree-item tree-file" data-path="${item.path}">${fileIcon}${item.name}</div>`;
+        }
+      });
+
+      treeContent.innerHTML = html;
+
+      // Toggle folder collapse
+      treeContent.querySelectorAll('.tree-folder[data-folder-id]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          const folderId = el.dataset.folderId;
+          const children = document.getElementById(folderId);
+          const toggle = el.querySelector('.tree-toggle');
+          if (children.style.display === 'none') {
+            children.style.display = 'block';
+            toggle.innerHTML = '&#9660;';
+          } else {
+            children.style.display = 'none';
+            toggle.innerHTML = '&#9654;';
+          }
         });
       });
     }
