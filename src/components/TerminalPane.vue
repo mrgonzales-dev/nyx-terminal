@@ -227,8 +227,9 @@ onMounted(() => {
       cursor.classList.remove('xterm-cursor-outline', 'xterm-cursor-bar', 'xterm-cursor-underline')
       cursor.classList.add('xterm-cursor-block')
       cursor.style.width = 'auto'
-      cursor.style.minWidth = '14px'
-      cursor.style.maxWidth = '14px'
+      cursor.style.minWidth = '20px'
+      cursor.style.maxWidth = '20px'
+      cursor.style.height = '30px'
     }
   }
   // Force immediately and then periodically
@@ -407,15 +408,16 @@ onUnmounted(() => {
 
 /* Force block cursor visibility for nvim */
 .terminal-wrapper :deep(.xterm-cursor) {
-  background-color: #00ff00 !important;
-  color: #000000 !important;
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
+  background-color: #ff0000 !important;
+  color: #ffffff !important;
+  outline: 5px solid #ff0000 !important;
+  box-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000 !important;
+  border: 5px solid #ff0000 !important;
   width: auto !important;
-  min-width: 14px !important;
-  max-width: 14px !important;
-  z-index: 1000 !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 30px !important;
+  z-index: 9999 !important;
   position: relative !important;
 }
 </style>
