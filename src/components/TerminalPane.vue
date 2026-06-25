@@ -100,12 +100,7 @@ const terminalConfig = {
 function focusTerminal() {
   emit('focus', props.id)
   if (term) {
-    const textarea = terminalRef.value?.querySelector('.xterm-helper-textarea')
-    if (textarea) {
-      textarea.focus()
-    } else {
-      term.focus()
-    }
+    term.focus()
   }
 }
 
@@ -223,16 +218,12 @@ onMounted(() => {
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
     emit('focus', props.id)
-    const textarea = terminalRef.value?.querySelector('.xterm-helper-textarea')
-    if (textarea) {
-      textarea.focus()
-    } else {
-      term.focus()
-    }
+    term.focus()
   })
 
   connectWs()
 
+  // Set up onData handler - will queue data if WebSocket not ready
   term.onData((data) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(data)
