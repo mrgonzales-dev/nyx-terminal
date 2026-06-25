@@ -1,115 +1,119 @@
 # Nyx
 
-A web-based terminal emulator with i3-style tiling splits, Electron desktop app support, and a dark HUD aesthetic. Access your real terminal from the browser or as a native desktop application.
+> A web-based terminal emulator with i3-style tiling splits. Real PTY, real apps, real workflows.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](LICENSE)
+[![Platform: Linux](https://img.shields.io/badge/Platform-Linux-6e56cf.svg)](#)
+[![Electron](https://img.shields.io/badge/Desktop-Electron-478be5.svg)](#)
+
+![Nyx](readme_src/nyx-demo.png)
+
+## What is Nyx
+
+Nyx is a terminal emulator that runs in your browser **and** as a native desktop app. It speaks to a real PTY — not a fake shell — so `htop`, `nvim`, `tmux`, and everything else you rely on just works. Split panes i3-style, and your running apps survive the split.
+
+## Why Nyx
+
+Most web terminals are demos. Nyx is built to be your daily driver.
+
+- **Real PTY** — Full terminal emulation backed by `node-pty`. No fake shells, no shortcuts.
+- **Apps survive splits** — Split a pane while `htop` is running. It keeps running. Flat rendering with stable keys means no component destruction.
+- **i3-style tiling** — Horizontal and vertical splits, nested as deep as you need. Close a pane and the layout collapses cleanly.
+- **CWD inheritance** — New splits open in the same directory as their parent, via OSC 7 and `/proc/<pid>/cwd`.
+- **Web + desktop** — Run it in the browser, or ship it as an Electron app with tray icon and native integrations.
+- **Dark HUD aesthetic** — Deep blacks, purple accents, subtle glow on the focused pane. Built to look good and stay out of your way.
+- **Session persistence** — Layout, names, opacity — all saved and restored on reload. Orphaned terminals cleaned up automatically.
+- **Auto-reconnect** — WebSocket drops? Nyx reconnects with exponential backoff. Your session waits for you.
 
 ## Features
 
+### Real PTY terminal
+
 ![Real PTY](readme_src/feature-pty.png)
-**Real PTY**: Full terminal emulation with node-pty — not a fake terminal
 
-![i3-Style Splits](readme_src/feature-split.png)
-**i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Running apps (htop, nvim) survive splits — flat rendering with stable keys prevents component destruction. Split inherits CWD via `/proc/<pid>/cwd` (Linux kernel, reliable).
+A genuine pseudo-terminal via `node-pty`. Every program that works in your local terminal works here.
 
-![Opacity Control](readme_src/feature-opacity.png)
-**Opacity Control**: Settings gear in the navbar — slide to adjust terminal transparency
+### i3-style tiling splits
 
-## Additional Features
+![Splits](readme_src/feature-split.png)
 
-- **Terminal Gaps**: Visual breathing room between terminals (configurable via GAP constant)
-- **Terminal Renaming**: Click the title to rename. Names persist across sessions
-- **Active Terminal Glow**: Focused terminal gets a lighter border with purple glow
-- **Copy/Paste**: Right-click to copy selection or paste. Ctrl+Shift+C/V shortcuts
-- **Session Persistence**: Terminals, layout tree, names, opacity — all saved and restored. Orphaned terminals cleaned on load
-- **Auto-Reconnect**: WebSocket disconnects trigger exponential backoff reconnect
-- **4-Terminal Limit**: Max 4 terminals by design. Split and New Terminal buttons disabled at cap
-- **Security**: Server binds to 127.0.0.1 only, origin checking on WebSocket
-- **Electron Ready**: Desktop app with tray icon, native integrations
+Split any pane horizontally or vertically, nest as deep as you like. Running apps keep running — the renderer uses stable keys so panes are never torn down and rebuilt.
 
-## Installation
+### Opacity control
+
+![Opacity](readme_src/feature-opacity.png)
+
+Slide the settings gear in the navbar to dial in terminal transparency. Persisted across sessions.
+
+### And more
+
+- **Terminal gaps** — Visual breathing room between panes (configurable)
+- **Rename panes** — Click a title to rename. Names persist
+- **Active pane glow** — Focused pane gets a lighter border with a purple glow
+- **Copy / paste** — Right-click to copy or paste, or use `Ctrl+Shift+C` / `Ctrl+Shift+V`
+- **4-pane cap** — Max four terminals by design. Keeps things focused
+- **Electron desktop** — Tray icon, native integrations, runs locally
+
+## Quick Start
 
 ```bash
-cd ~/Projects/nyx-terminal
+git clone https://github.com/mrgonzales-dev/nyx-terminal.git
+cd nyx-terminal
 npm install
-```
-
-## Usage
-
-**Web Development:**
-```bash
 npm run dev
 ```
 
-**Web Production:**
-```bash
-npm run build
-npm start
-```
+Then open **http://localhost:2800**.
 
-**Electron Desktop App (Development):**
+Want the desktop app instead?
+
 ```bash
 npm run electron:dev
 ```
 
-**Electron Desktop App (Production):**
-```bash
-npm run electron
-```
+## Usage
 
-**Build Electron for Distribution:**
-```bash
-npm run electron:build
-```
+### Splitting panes
 
-For web, open http://localhost:2800 in your browser.
+- Click the **split icon** in a pane's header to split horizontally or vertically
+- The new pane inherits the current working directory of its parent
+- Use **New Terminal** in the footer for a fresh pane at your home directory
+- Close a pane with the × button — the layout collapses automatically
 
-## Keyboard Shortcuts
+### Keyboard shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+Shift+C | Copy selected text |
-| Ctrl+Shift+V | Paste from clipboard |
+| `Ctrl+Shift+C` | Copy selected text |
+| `Ctrl+Shift+V` | Paste from clipboard |
 | Right-click (with selection) | Copy to clipboard |
 | Right-click (no selection) | Paste from clipboard |
 
-## Splitting
+### Running it
 
-- Click the **split icon** in any terminal's header to choose horizontal or vertical split
-- The new terminal inherits the current working directory of the terminal it was split from
-- Use the **New Terminal** button in the footer for a fresh terminal at home directory
-- Close a terminal with the × button — the split collapses automatically
+| Mode | Command |
+|------|---------|
+| Web (dev) | `npm run dev` |
+| Web (prod) | `npm run build && npm start` |
+| Electron (dev) | `npm run electron:dev` |
+| Electron (prod) | `npm run electron` |
+| Build for distribution | `npm run electron:build` |
 
 ## Customization
 
-Edit `src/components/TerminalPane.vue` to customize:
-- Terminal colors (xterm theme)
-- Font family and size
-- Border styling and glow
-
-Edit `src/components/Settings.vue` to customize:
-- Opacity slider range and defaults
-- Settings panel layout
-
-Edit `src/App.vue` to customize:
-- Split behavior and layout tree
-- Session save/restore logic
-
-Edit `electron/main.js` to customize Electron settings:
-- Window size and behavior
-- Tray menu configuration
-- Native integrations
-
-## Security
-
-**Warning**: The web version gives full terminal access to anyone who can access the URL. The server binds to `127.0.0.1` only and checks WebSocket origins, but use behind a firewall or add authentication for production use.
-
-The Electron desktop app runs locally and is not exposed to the network.
+| What | Where |
+|------|-------|
+| Terminal colors, font, border, glow | `src/components/TerminalPane.vue` |
+| Opacity slider range and defaults | `src/components/Settings.vue` |
+| Split behavior and session logic | `src/App.vue` |
+| Electron window, tray, native settings | `electron/main.js` |
 
 ## Tech Stack
 
-- **Backend**: Node.js + Express + node-pty + WebSocket
-- **Frontend**: Vue 3 + Vite + xterm.js
-- **Desktop**: Electron + electron-builder
-- **Styling**: CSS with dark HUD theme, JetBrainsMono Nerd Font
+- **Backend** — Node.js, Express, `node-pty`, WebSocket (`ws`)
+- **Frontend** — Vue 3, Vite, xterm.js
+- **Desktop** — Electron, electron-builder
+- **Styling** — CSS, dark HUD theme, JetBrainsMono Nerd Font
 
 ## Project Structure
 
@@ -137,6 +141,12 @@ nyx-terminal/
     ├── assets/            # Favicon, background image
     └── fonts/             # JetBrainsMono Nerd Font
 ```
+
+## Security
+
+**The web version gives full terminal access to anyone who can reach the URL.** The server binds to `127.0.0.1` only and checks WebSocket origins, but if you expose it, add authentication and put it behind a firewall.
+
+The Electron desktop app runs locally and is not exposed to the network.
 
 ## License
 

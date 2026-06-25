@@ -159,12 +159,42 @@ wss.on('connection', (ws, req) => {
 
   activePtys.add(ptyProcess);
 
-  let currentCwd = initialCwd;
+  // OSC 7 cwd tracking — inject shell snippet that emits \e]7;file://host/path\a
+  // on every directory change. This is what Kitty/WezTerm/VS Code use; works
+  // even when a foreground app (htop, nvim) is running because the shell hook
+  // fires on prompt/chpwd, not on a query.
+  const hostname = os.hostname();
+  const osc7Init = `
+if [ -n "$BASH_VERSION" ]; then
+  __nyx_osc7() { printf '\\e]7;file://${hostname}%s\\a' "$PWD"; }
+  PROMPT_COMMAND="__nyx_osc7${'${PROMPT_COMMAND:+;$PROMPT_COMMAND}'}"
+  __nyx_osc7
+elif [ -n "$ZSH_VERSION" ]; then
+  __nyx_osc7() { printf '\\e]7;file://${hostname}%s\\a' "$PWD"; }
+  chpwd_functions+=(__nyx_osc7)
+  __nyx_osc7
+fi
+`;
+  ptyProcess.write(osc7Init + '\n');
 
-  // Send PTY output to WebSocket
+  let currentCwd = initialCwd;
+  let ptyBuffer = '';
+
+  // Send PTY output to WebSocket + parse OSC 7 for cwd tracking
   ptyProcess.on('data', (data) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(data);
+    }
+    // Parse OSC 7: \x1b]7;file://hostname/path\x07
+    ptyBuffer += data.toString('utf8');
+    const osc7Regex = /\x1b\]7;file:\/\/[^\/]*([^\x07\x1b]*)\x07/g;
+    let match;
+    while ((match = osc7Regex.exec(ptyBuffer)) !== null) {
+      const p = decodeURIComponent(match[1]);
+      if (p) currentCwd = p;
+    }
+    if (ptyBuffer.length > 256) {
+      ptyBuffer = ptyBuffer.slice(-256);
     }
   });
 
@@ -175,11 +205,11 @@ wss.on('connection', (ws, req) => {
       if (data.type === 'resize') {
         ptyProcess.resize(data.cols, data.rows);
       } else if (data.type === 'getcwd') {
-        let cwd = null;
-        try {
-          cwd = fs.readlinkSync(`/proc/${ptyProcess.pid}/cwd`);
-        } catch (e) {
-          cwd = currentCwd || null;
+        let cwd = currentCwd;
+        if (!cwd) {
+          try {
+            cwd = fs.readlinkSync(`/proc/${ptyProcess.pid}/cwd`);
+          } catch (e) {}
         }
         ws.send(JSON.stringify({ type: 'cwd', cwd }));
       }
