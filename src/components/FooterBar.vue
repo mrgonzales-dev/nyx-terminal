@@ -1,6 +1,12 @@
 <template>
   <footer class="footer">
-    <button class="footer-btn" @click="$emit('add-terminal')">
+    <button
+      class="footer-btn"
+      :class="{ disabled: maxReached }"
+      :disabled="maxReached"
+      :title="maxReached ? 'Maximum terminals reached' : 'New terminal'"
+      @click="$emit('add-terminal')"
+    >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 5v14M5 12h14"/>
       </svg>
@@ -24,6 +30,10 @@
 
 <script setup>
 import { ref } from 'vue'
+
+const props = defineProps({
+  maxReached: { type: Boolean, default: false }
+})
 
 const emit = defineEmits(['add-terminal', 'save'])
 
@@ -82,6 +92,12 @@ async function handleSave() {
   background: rgba(167, 139, 250, 0.2);
   border-color: rgba(167, 139, 250, 0.4);
   color: #c4b5fd;
+}
+
+.footer-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .footer-btn svg {

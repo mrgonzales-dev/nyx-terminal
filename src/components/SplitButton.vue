@@ -20,9 +20,10 @@
     </transition>
     <button
       class="split-btn"
-      :class="{ active: !collapsed }"
+      :class="{ active: !collapsed, disabled: disabled }"
+      :disabled="disabled"
       @click="toggle"
-      title="Split terminal"
+      :title="disabled ? 'Maximum terminals reached' : 'Split terminal'"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -37,7 +38,8 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 defineProps({
-  label: { type: String, default: '' }
+  label: { type: String, default: '' },
+  disabled: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['split'])
@@ -144,6 +146,12 @@ onUnmounted(() => {
 .split-btn.active {
   color: #c4b5fd;
   background: rgba(167, 139, 250, 0.15);
+}
+
+.split-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .split-btn svg {

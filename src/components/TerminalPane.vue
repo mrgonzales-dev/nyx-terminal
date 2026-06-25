@@ -11,7 +11,7 @@
         spellcheck="false"
       />
       <div class="terminal-actions">
-        <SplitButton @split="$emit('split', id, $event)" />
+        <SplitButton :disabled="maxReached" @split="$emit('split', id, $event)" />
         <button
           v-if="canClose"
           class="terminal-close"
@@ -42,7 +42,8 @@ const props = defineProps({
   name: { type: String, default: '' },
   cwd: { type: String, default: null },
   canClose: { type: Boolean, default: true },
-  isActive: { type: Boolean, default: false }
+  isActive: { type: Boolean, default: false },
+  maxReached: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'rename', 'split', 'focus'])

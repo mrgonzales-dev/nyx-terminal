@@ -8,6 +8,7 @@
         :terminalRefs="terminalRefs"
         :canClose="terminals.length > 1"
         :activeId="activeTerminalId"
+        :maxReached="terminals.length >= MAX_TERMINALS"
         @close="closeTerminal"
         @rename="renameTerminal"
         @split="splitTerminal"
@@ -17,6 +18,7 @@
     </div>
   </main>
   <FooterBar
+    :maxReached="terminals.length >= MAX_TERMINALS"
     @add-terminal="addTerminalHorizontal"
     @save="saveSession"
   />
@@ -36,6 +38,7 @@ const opacity = ref(85)
 const activeTerminalId = ref(null)
 const terminalRefs = ref({})
 let terminalCounter = 0
+const MAX_TERMINALS = 4
 
 // Layout tree: { type: 'leaf', terminalId } or { type: 'split', direction, children: [], sizes: [] }
 const layout = ref({ type: 'leaf', terminalId: null })
@@ -84,6 +87,7 @@ function findLeaf(node, terminalId) {
 async function splitTerminal(terminalId, direction) {
   const id = terminalId || activeTerminalId.value
   if (!id) return
+  if (terminals.value.length >= MAX_TERMINALS) return
 
   activeTerminalId.value = id
 
@@ -113,20 +117,13 @@ async function splitTerminal(terminalId, direction) {
   setTimeout(onPanelsResize, 50)
 }
 
-function splitActiveTerminal(direction) {
-  if (!activeTerminalId.value) {
-    addTerminal()
-    return
-  }
-  splitTerminal(activeTerminalId.value, direction)
-}
-
 // Footer "New Terminal" — fresh terminal at home, added horizontally
 function addTerminalHorizontal() {
   if (!activeTerminalId.value) {
     addTerminal()
     return
   }
+  if (terminals.value.length >= MAX_TERMINALS) return
   // Split active terminal horizontally but with home cwd (not inherited)
   const id = activeTerminalId.value
   const leaf = findLeaf(layout.value, id)

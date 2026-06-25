@@ -91,9 +91,6 @@ app.post('/api/session', (req, res) => {
 // Track active PTY processes for cleanup
 const activePtys = new Set();
 
-// Map WS connection → PTY pid for getcwd lookups
-const wsPtyMap = new Map();
-
 // Cleanup all PTY processes on exit
 function cleanupAllPtys() {
   for (const ptyProcess of activePtys) {
@@ -147,7 +144,6 @@ wss.on('connection', (ws, req) => {
   });
 
   activePtys.add(ptyProcess);
-  wsPtyMap.set(ws, ptyProcess.pid);
 
   // Send PTY output to WebSocket
   ptyProcess.on('data', (data) => {
@@ -181,7 +177,6 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     console.log('Client disconnected');
     activePtys.delete(ptyProcess);
-    wsPtyMap.delete(ws);
     try {
       ptyProcess.kill();
     } catch (e) {
@@ -192,7 +187,6 @@ wss.on('connection', (ws, req) => {
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
     activePtys.delete(ptyProcess);
-    wsPtyMap.delete(ws);
     try {
       ptyProcess.kill();
     } catch (e) {

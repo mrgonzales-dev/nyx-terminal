@@ -12,6 +12,7 @@
           :cwd="terminal.cwd"
           :canClose="canClose"
           :isActive="activeId === terminal.id"
+          :maxReached="maxReached"
           :ref="el => setRef(terminal.id, el)"
           @close="$emit('close', terminal.id)"
           @rename="(id, name) => $emit('rename', id, name)"
@@ -30,6 +31,7 @@
             :terminalRefs="terminalRefs"
             :canClose="canClose"
             :activeId="activeId"
+            :maxReached="maxReached"
             @close="$emit('close', $event)"
             @rename="(id, name) => $emit('rename', id, name)"
             @split="(id, dir) => $emit('split', id, dir)"
@@ -57,7 +59,8 @@ const props = defineProps({
   terminals: { type: Array, required: true },
   terminalRefs: { type: Object, required: true },
   canClose: { type: Boolean, default: true },
-  activeId: { type: Number, default: null }
+  activeId: { type: Number, default: null },
+  maxReached: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'rename', 'split', 'focus', 'resize'])
