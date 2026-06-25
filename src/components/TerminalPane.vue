@@ -48,7 +48,6 @@ const props = defineProps({
 const emit = defineEmits(['close', 'rename', 'split', 'focus'])
 
 const terminalRef = ref(null)
-const customCursor = ref(null)
 const disconnected = ref(false)
 const editing = ref(false)
 let term = null
@@ -60,13 +59,12 @@ let disposed = false
 let clipboardWriteTimer = null
 let lastClipboardText = ''
 let cursorInterval = null
-let customCursorInterval = null
 
 const terminalConfig = {
   theme: {
     background: 'transparent',
     foreground: '#e4e4e7',
-    cursor: '#00ff00',
+    cursor: '#ffffff',
     cursorAccent: '#000000',
     selectionBackground: 'rgba(167, 139, 250, 0.3)',
     selectionForeground: '#ffffff',
@@ -219,7 +217,7 @@ onMounted(() => {
 
   // Force block cursor with bright color for nvim compatibility
   term.options.cursorStyle = 'block'
-  term.options.cursorWidth = 8
+  term.options.cursorWidth = 2
   term.options.cursorBlink = false // Disable blink to ensure visibility
 
   // Force cursor class to block (nvim compatibility)
@@ -229,44 +227,15 @@ onMounted(() => {
       cursor.classList.remove('xterm-cursor-outline', 'xterm-cursor-bar', 'xterm-cursor-underline')
       cursor.classList.add('xterm-cursor-block')
       cursor.style.width = 'auto'
-      cursor.style.minWidth = '20px'
-      cursor.style.maxWidth = '20px'
-      cursor.style.height = '30px'
+      cursor.style.minWidth = '8px'
+      cursor.style.maxWidth = '8px'
+      cursor.style.height = '14px'
+      cursor.style.backgroundColor = '#ffffff'
     }
   }
   // Force immediately and then periodically
   forceBlockCursor()
   cursorInterval = setInterval(forceBlockCursor, 100)
-
-  // Create custom cursor and append to body
-  const cursorEl = document.createElement('div')
-  cursorEl.className = 'custom-cursor'
-  cursorEl.id = `custom-cursor-${props.id}`
-  // Normal cursor styling
-  cursorEl.style.position = 'fixed'
-  cursorEl.style.width = '14px'
-  cursorEl.style.height = '20px'
-  cursorEl.style.backgroundColor = '#00ff00'
-  cursorEl.style.border = 'none'
-  cursorEl.style.boxShadow = 'none'
-  cursorEl.style.zIndex = '100'
-  cursorEl.style.pointerEvents = 'none'
-  cursorEl.style.transition = 'all 0.05s ease'
-  document.body.appendChild(cursorEl)
-  customCursor.value = cursorEl
-
-  // Custom cursor positioning
-  const updateCustomCursor = () => {
-    const cursor = terminalRef.value?.querySelector('.xterm-cursor')
-    const custom = customCursor.value
-    if (cursor && custom) {
-      const rect = cursor.getBoundingClientRect()
-      custom.style.left = rect.left + 'px'
-      custom.style.top = rect.top + 'px'
-    }
-  }
-  updateCustomCursor()
-  const customCursorInterval = setInterval(updateCustomCursor, 50)
 
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
@@ -302,11 +271,6 @@ onUnmounted(() => {
   term?.dispose()
   // Clear cursor intervals
   if (cursorInterval) clearInterval(cursorInterval)
-  if (customCursorInterval) clearInterval(customCursorInterval)
-  // Remove custom cursor from body
-  if (customCursor.value) {
-    document.body.removeChild(customCursor.value)
-  }
 })
 </script>
 
@@ -441,18 +405,5 @@ onUnmounted(() => {
 .reconnect-btn:hover {
   background: rgba(248, 113, 113, 0.3);
   color: #fff;
-}
-
-/* Custom cursor overlay as fallback */
-.custom-cursor {
-  position: fixed;
-  width: 14px;
-  height: 20px;
-  background-color: #00ff00;
-  border: none;
-  box-shadow: none;
-  z-index: 100;
-  pointer-events: none;
-  transition: all 0.05s ease;
 }
 </style>
