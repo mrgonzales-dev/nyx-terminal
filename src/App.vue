@@ -192,18 +192,21 @@ function splitTerminal(terminalId, direction) {
 
   // Find the corresponding parent in the cloned tree
   const cloneParent = parent ? findParent(newLayout, id) : newLayout
+  if (!cloneParent || !cloneParent.children) {
+    console.error('[splitTerminal] Failed to find parent in cloned tree', { id, parent, cloneParent, layout: layout.value })
+    return
+  }
   const cloneIdx = cloneParent.children.findIndex(c => c.type === 'leaf' && c.terminalId === id)
 
-  // Critical: validate that we found the leaf in the cloned tree
   if (cloneIdx === -1) {
-    console.error('[splitTerminal] Failed to find leaf in cloned tree', { id, cloneParent })
+    console.error('[splitTerminal] Failed to find leaf in cloned tree', { id, cloneParent, layout: layout.value })
     return
   }
 
   if (cloneParent.direction === direction) {
     cloneParent.children.splice(cloneIdx + 1, 0, { type: 'leaf', terminalId: newId })
-    const equal = 100 / cloneParent.children.length
-    cloneParent.sizes = Array(cloneParent.children.length).fill(equal)
+    const equal = cloneParent.children.length
+    cloneParent.sizes = Array(equal).fill(100 / equal)
   } else {
     cloneParent.children[cloneIdx] = {
       type: 'split',
