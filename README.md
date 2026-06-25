@@ -2,21 +2,26 @@
 
 A web-based terminal emulator with i3-style tiling splits, Electron desktop app support, and a dark HUD aesthetic. Access your real terminal from the browser or as a native desktop application.
 
-![Nyx Demo](readme_src/nyx-demo.gif)
-
 ## Features
 
-- **i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Running apps (htop, nvim) survive splits — flat rendering with stable keys prevents component destruction.
-- **Real PTY**: Full terminal emulation with node-pty — not a fake terminal
-- **Split Inherits CWD**: Splitting a terminal opens the new one in the same directory via `/proc/<pid>/cwd` (Linux kernel, reliable)
+![Real PTY](readme_src/feature-pty.png)
+**Real PTY**: Full terminal emulation with node-pty — not a fake terminal
+
+![i3-Style Splits](readme_src/feature-split.png)
+**i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Running apps (htop, nvim) survive splits — flat rendering with stable keys prevents component destruction. Split inherits CWD via `/proc/<pid>/cwd` (Linux kernel, reliable).
+
+![Opacity Control](readme_src/feature-opacity.png)
+**Opacity Control**: Settings gear in the navbar — slide to adjust terminal transparency
+
+## Additional Features
+
 - **Terminal Gaps**: Visual breathing room between terminals (configurable via GAP constant)
-- **Terminal Renaming**: Click the title to rename. Names persist across sessions.
+- **Terminal Renaming**: Click the title to rename. Names persist across sessions
 - **Active Terminal Glow**: Focused terminal gets a lighter border with purple glow
-- **Opacity Control**: Settings gear in the navbar — slide to adjust terminal transparency
-- **Copy/Paste**: Right-click to copy selection or paste. Ctrl+Shift+C/V shortcuts.
-- **Session Persistence**: Terminals, layout tree, names, opacity — all saved and restored. Orphaned terminals cleaned on load.
+- **Copy/Paste**: Right-click to copy selection or paste. Ctrl+Shift+C/V shortcuts
+- **Session Persistence**: Terminals, layout tree, names, opacity — all saved and restored. Orphaned terminals cleaned on load
 - **Auto-Reconnect**: WebSocket disconnects trigger exponential backoff reconnect
-- **4-Terminal Limit**: Max 4 terminals by design. Split and New Terminal buttons disabled at cap.
+- **4-Terminal Limit**: Max 4 terminals by design. Split and New Terminal buttons disabled at cap
 - **Security**: Server binds to 127.0.0.1 only, origin checking on WebSocket
 - **Electron Ready**: Desktop app with tray icon, native integrations
 
