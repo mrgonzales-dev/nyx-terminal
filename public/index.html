@@ -335,7 +335,10 @@
     <div id="tree-panel">
       <div id="tree-header">
         <h2>Files</h2>
-        <button id="tree-close">&times;</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="tree-home" title="Home" style="background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 14px; padding: 4px;">~</button>
+          <button id="tree-close">&times;</button>
+        </div>
       </div>
       <div id="tree-content">
         <div class="tree-item tree-folder">Loading...</div>
@@ -613,6 +616,10 @@
       setTimeout(fitAllTerminals, 50);
     });
 
+    document.getElementById('tree-home').addEventListener('click', () => {
+      loadTree('~');
+    });
+
     btnTree.addEventListener('click', toggleTree);
 
     btnAddTerminal.addEventListener('click', () => {
@@ -649,7 +656,8 @@
     })();
 
     // Load directory tree
-    function loadTree(path = '~') {
+    function loadTree(path = null) {
+      if (!path) path = '~';
       treeContent.innerHTML = '<div class="tree-item" style="color: rgba(255,255,255,0.4)">Loading...</div>';
       if (terminals.length > 0 && terminals[0].ws.readyState === WebSocket.OPEN) {
         terminals[0].ws.send(JSON.stringify({ type: 'tree', path }));

@@ -1,6 +1,6 @@
-# Nyx-Hermes
+# Nyx
 
-A web-based terminal with Nyx background. Access your real terminal from the browser with full filesystem access.
+A web-based terminal with Hermes background. Access your real terminal from the browser with full filesystem access.
 
 ## Features
 
