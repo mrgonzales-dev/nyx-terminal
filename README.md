@@ -1,6 +1,6 @@
 # Nyx
 
-A web-based terminal. Access your real terminal from the browser with full filesystem access.
+A web-based terminal with Electron desktop app support. Access your real terminal from the browser or as a native desktop application with full filesystem access.
 
 ![Sample2](readme_src/sample2.png)
 
@@ -23,18 +23,33 @@ npm install
 
 ## Usage
 
-**Development:**
+**Web Development:**
 ```bash
 npm run dev
 ```
 
-**Production:**
+**Web Production:**
 ```bash
 npm run build
 npm start
 ```
 
-Then open http://localhost:3000 in your browser.
+**Electron Desktop App (Development):**
+```bash
+npm run electron:dev
+```
+
+**Electron Desktop App (Production):**
+```bash
+npm run electron
+```
+
+**Build Electron for Distribution:**
+```bash
+npm run electron:build
+```
+
+For web, open http://localhost:3000 in your browser.
 
 ## Customization
 
@@ -44,12 +59,20 @@ Edit `src/App.vue` to customize:
 - Terminal colors (xterm theme)
 - HUD header styling
 
+Edit `electron/main.js` to customize Electron settings:
+- Window size and behavior
+- Menu configuration
+- Native integrations
+
 ## Security
 
-**Warning**: This gives full terminal access to anyone who can access the URL. Use behind a firewall or add authentication for production use.
+**Warning**: The web version gives full terminal access to anyone who can access the URL. Use behind a firewall or add authentication for production use.
+
+The Electron desktop app runs locally and is not exposed to the network.
 
 ## Tech Stack
 
 - **Backend**: Node.js + Express + node-pty + WebSocket
 - **Frontend**: Vue 3 + Vite + @xterm/xterm
+- **Desktop**: Electron + electron-builder
 - **Styling**: CSS with gradients and grid patterns

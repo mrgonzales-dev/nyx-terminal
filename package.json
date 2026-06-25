@@ -2,12 +2,18 @@
   "name": "nyx",
   "version": "1.0.0",
   "description": "Nyx - Web Terminal",
-  "main": "server.js",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"node server.js\"",
     "build": "vite build",
     "start": "node server.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "npm run build && electron .",
+    "electron:dev": "NODE_ENV=development electron .",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:linux": "npm run build && electron-builder --linux",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -20,10 +26,59 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.0",
     "concurrently": "^8.2.0",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3",
     "vite": "^5.0.0",
     "vue": "^3.3.0"
   },
-  "keywords": ["terminal", "web", "vue"],
+  "build": {
+    "appId": "com.nyx.terminal",
+    "productName": "Nyx",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "public/**/*",
+      "electron/**/*",
+      "server.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/node-pty",
+        "to": "node_modules/node-pty"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "TerminalEmulator",
+      "icon": "public/assets"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "public/assets/favicon.svg"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "public/assets/favicon.svg"
+    }
+  },
+  "keywords": [
+    "terminal",
+    "web",
+    "vue",
+    "electron"
+  ],
   "author": "",
   "license": "MIT"
 }
