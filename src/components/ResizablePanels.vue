@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 
 const props = defineProps({
   items: { type: Array, required: true }
@@ -54,24 +54,27 @@ function startResize(event, index) {
 
 function onMouseMove(event) {
   if (!isResizing.value || !containerRef.value) return
-  
+
   const containerWidth = containerRef.value.offsetWidth
   const deltaX = event.clientX - startX.value
   const deltaPercent = (deltaX / containerWidth) * 100
-  
+
   const index = resizeIndex.value
   const newLeftSize = startSizes.value[index] + deltaPercent
   const newRightSize = startSizes.value[index + 1] - deltaPercent
-  
+
   // Minimum 10% per panel
   if (newLeftSize >= 10 && newRightSize >= 10) {
     panelSizes.value[index] = newLeftSize
     panelSizes.value[index + 1] = newRightSize
-    emit('resize')
   }
 }
 
 function stopResize() {
+  if (isResizing.value) {
+    // Only emit resize once on mouseup, not on every mousemove
+    emit('resize')
+  }
   isResizing.value = false
   resizeIndex.value = -1
   document.removeEventListener('mousemove', onMouseMove)

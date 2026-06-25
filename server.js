@@ -5,32 +5,20 @@ const path = require('path');
 const http = require('http');
 const fs = require('fs');
 const os = require('os');
-const net = require('net');
 
 const app = express();
 const server = http.createServer(app);
+
+// Allowed origins for WebSocket connections (prevent CSRF/RCE from other pages)
+const ALLOWED_ORIGINS = [
+  'http://localhost:2800',
+  'http://127.0.0.1:2800',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+
+// Dynamic port: 0 lets the OS assign an available port (no TOCTOU race)
 const wss = new WebSocket.Server({ server });
-
-const DEFAULT_PORT = 2800;
-
-// Find an available port starting from the default
-function getAvailablePort(startPort) {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    
-    server.listen(startPort, () => {
-      const port = server.address().port;
-      server.close(() => resolve(port));
-    });
-    
-    server.on('error', () => {
-      // Port is in use, try the next one
-      server.close(() => {
-        getAvailablePort(startPort + 1).then(resolve);
-      });
-    });
-  });
-}
 
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'nyx');
 const SESSION_FILE = path.join(CONFIG_DIR, 'session.json');
@@ -81,14 +69,38 @@ app.post('/api/session', (req, res) => {
   res.json({ ok: true });
 });
 
-// Get directory tree
+// Get directory tree via HTTP (no PTY needed — fixes H4 process leak)
+app.get('/api/tree', (req, res) => {
+  const requestedPath = req.query.path || os.homedir();
+  const resolvedPath = path.resolve(requestedPath.replace(/^~/, os.homedir()));
+
+  // Security: prevent path traversal outside allowed roots
+  const homeDir = os.homedir();
+  const isAllowed = resolvedPath === homeDir ||
+    resolvedPath.startsWith(homeDir + path.sep) ||
+    resolvedPath === '/' ||
+    resolvedPath.startsWith('/tmp' + path.sep);
+
+  if (!isAllowed) {
+    return res.status(403).json({ error: 'Access denied: path outside allowed root' });
+  }
+
+  try {
+    const items = getTree(resolvedPath);
+    res.json({ path: resolvedPath, items });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get directory tree (internal function)
 function getTree(dirPath, depth = 0, maxDepth = 2) {
   const items = [];
-  const resolvedPath = dirPath.replace(/^~/, os.homedir());
-  
+  const resolvedPath = path.resolve(dirPath);
+
   try {
     const entries = fs.readdirSync(resolvedPath, { withFileTypes: true });
-    
+
     // Sort: directories first, then files, alphabetically
     entries.sort((a, b) => {
       if (a.isDirectory() && !b.isDirectory()) return -1;
@@ -99,7 +111,7 @@ function getTree(dirPath, depth = 0, maxDepth = 2) {
     for (const entry of entries) {
       // Skip hidden files and common noise
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-      
+
       const fullPath = path.join(resolvedPath, entry.name);
       items.push({
         name: entry.name,
@@ -114,23 +126,56 @@ function getTree(dirPath, depth = 0, maxDepth = 2) {
       }
     }
   } catch (err) {
-    // Permission denied or other error
+    // Re-throw so the HTTP handler can send the error to the client
+    throw err;
   }
 
   return items;
 }
 
+// Track active PTY processes for cleanup
+const activePtys = new Set();
+
+// Cleanup all PTY processes on exit
+function cleanupAllPtys() {
+  for (const ptyProcess of activePtys) {
+    try {
+      ptyProcess.kill();
+    } catch (e) {
+      // Already dead
+    }
+  }
+  activePtys.clear();
+}
+
+process.on('SIGTERM', () => {
+  cleanupAllPtys();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  cleanupAllPtys();
+  process.exit(0);
+});
+
 // WebSocket connection handler
 wss.on('connection', (ws, req) => {
+  // Security: validate origin to prevent cross-site WebSocket hijacking
+  const origin = req.headers.origin;
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    ws.close(1008, 'Origin not allowed');
+    return;
+  }
+
   console.log('Client connected');
 
   // Parse cwd from query string
   const url = new URL(req.url, `http://${req.headers.host}`);
-  let initialCwd = url.searchParams.get('cwd') || process.env.HOME;
-  
+  let initialCwd = url.searchParams.get('cwd') || os.homedir();
+
   // Validate cwd exists
   if (!fs.existsSync(initialCwd)) {
-    initialCwd = process.env.HOME;
+    initialCwd = os.homedir();
   }
 
   // Create PTY
@@ -143,12 +188,13 @@ wss.on('connection', (ws, req) => {
     env: { ...process.env, TERM: 'xterm-256color' }
   });
 
-  // Track current working directory
-  let currentCwd = initialCwd;
+  activePtys.add(ptyProcess);
 
   // Send PTY output to WebSocket
   ptyProcess.on('data', (data) => {
-    ws.send(data);
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(data);
+    }
   });
 
   // Send WebSocket input to PTY
@@ -158,17 +204,23 @@ wss.on('connection', (ws, req) => {
       if (data.type === 'resize') {
         ptyProcess.resize(data.cols, data.rows);
       } else if (data.type === 'tree') {
-        const treePath = data.path || process.env.HOME;
-        const items = getTree(treePath);
-        ws.send(JSON.stringify({ type: 'tree', path: treePath, items }));
-      } else if (data.type === 'getcwd') {
-        // Get current working directory from shell
-        ptyProcess.write('pwd\r');
-      } else {
-        ptyProcess.write(msg.toString());
+        // Tree requests should use the HTTP /api/tree endpoint now.
+        // Keep backward compat but don't spawn anything new.
+        const treePath = data.path || os.homedir();
+        try {
+          const items = getTree(treePath);
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'tree', path: treePath, items }));
+          }
+        } catch (err) {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'tree', error: err.message }));
+          }
+        }
       }
+      // getcwd handler removed — was broken and destructive (wrote pwd into PTY)
     } catch (e) {
-      // Not JSON, send directly to PTY
+      // Not JSON, send directly to PTY (raw terminal input)
       ptyProcess.write(msg.toString());
     }
   });
@@ -176,18 +228,34 @@ wss.on('connection', (ws, req) => {
   // Handle disconnect
   ws.on('close', () => {
     console.log('Client disconnected');
-    ptyProcess.kill();
+    activePtys.delete(ptyProcess);
+    try {
+      ptyProcess.kill();
+    } catch (e) {
+      // Already dead
+    }
   });
 
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
-    ptyProcess.kill();
+    activePtys.delete(ptyProcess);
+    try {
+      ptyProcess.kill();
+    } catch (e) {
+      // Already dead
+    }
   });
 });
 
-// Start server with dynamic port selection
-getAvailablePort(DEFAULT_PORT).then((port) => {
-  server.listen(port, () => {
-    console.log(`Nyx running at http://localhost:${port}`);
-  });
+// Start server
+// - Electron: port 0 lets the OS pick (no race), parent parses stdout for the port
+// - Dev mode (npm run dev): fixed port 2800 so the Vite proxy can route to it
+// - Production: port 2800 by default, or override via PORT env
+const isElectron = process.env.ELECTRON === 'true'
+const PORT = isElectron ? 0 : (process.env.PORT || 2800)
+server.listen(PORT, '127.0.0.1', () => {
+  const actualPort = server.address().port
+  // Print as parseable JSON so the Electron parent process can read it
+  console.log(JSON.stringify({ nyx: true, port: actualPort }))
+  console.log(`Nyx running at http://localhost:${actualPort}`)
 });

@@ -1,16 +1,28 @@
 <template>
   <div class="terminal-container" @click="focusTerminal">
     <div class="terminal-header">
-      <span class="terminal-title">Terminal {{ id }}</span>
-      <button 
-        v-if="canClose" 
-        class="terminal-close" 
+      <input
+        class="terminal-title"
+        :value="name"
+        @input="$emit('rename', id, $event.target.value)"
+        @click.stop
+        @focus="editing = true"
+        @blur="editing = false"
+        spellcheck="false"
+      />
+      <button
+        v-if="canClose"
+        class="terminal-close"
         @click.stop="$emit('close', id)"
       >
         &times;
       </button>
     </div>
     <div class="terminal-wrapper" ref="terminalRef"></div>
+    <div v-if="disconnected" class="terminal-disconnected">
+      <span>Disconnected</span>
+      <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
+    </div>
   </div>
 </template>
 
@@ -23,16 +35,22 @@ import 'xterm/css/xterm.css'
 
 const props = defineProps({
   id: { type: Number, required: true },
+  name: { type: String, default: '' },
   cwd: { type: String, default: null },
   canClose: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'rename'])
 
 const terminalRef = ref(null)
+const disconnected = ref(false)
+const editing = ref(false)
 let term = null
 let fitAddon = null
 let ws = null
+let reconnectAttempts = 0
+let reconnectTimer = null
+let disposed = false
 
 const terminalConfig = {
   theme: {
@@ -61,8 +79,8 @@ const terminalConfig = {
   },
   fontFamily: '"JetBrainsMono Nerd Font", "Fira Code", "JetBrains Mono", monospace',
   fontSize: 14,
-  fontWeight: '400',
-  fontWeightBold: '600',
+  fontWeight: '600',
+  fontWeightBold: '900',
   letterSpacing: 0,
   lineHeight: 1.4,
   cursorBlink: true,
@@ -80,7 +98,63 @@ function focusTerminal() {
 function fit() {
   try {
     fitAddon?.fit()
-  } catch (e) {}
+  } catch (e) {
+    console.warn('Failed to fit terminal:', e)
+  }
+}
+
+function buildWsUrl() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const base = `${protocol}//${window.location.host}/ws`
+  return props.cwd
+    ? `${base}?cwd=${encodeURIComponent(props.cwd)}`
+    : base
+}
+
+function connectWs() {
+  ws = new WebSocket(buildWsUrl())
+
+  ws.onopen = () => {
+    disconnected.value = false
+    reconnectAttempts = 0
+    const dims = fitAddon.proposeDimensions()
+    if (dims) {
+      ws.send(JSON.stringify({ type: 'resize', cols: dims.cols, rows: dims.rows }))
+    }
+  }
+
+  ws.onmessage = (event) => {
+    term.write(event.data)
+  }
+
+  ws.onerror = (err) => {
+    console.error('Terminal WebSocket error:', err)
+  }
+
+  ws.onclose = () => {
+    if (disposed) return
+    disconnected.value = true
+    // Auto-reconnect with exponential backoff (max 30s)
+    if (reconnectAttempts < 10) {
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000)
+      reconnectAttempts++
+      reconnectTimer = setTimeout(() => {
+        if (!disposed) connectWs()
+      }, delay)
+    }
+  }
+}
+
+function reconnect() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  reconnectAttempts = 0
+  if (ws) {
+    try { ws.close() } catch (e) {}
+  }
+  connectWs()
 }
 
 // Expose fit function to parent
@@ -95,35 +169,16 @@ onMounted(() => {
   term.loadAddon(webLinksAddon)
   term.open(terminalRef.value)
 
-  // WebSocket connection
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = props.cwd
-    ? `${protocol}//${window.location.host}?cwd=${encodeURIComponent(props.cwd)}`
-    : `${protocol}//${window.location.host}`
-  
-  ws = new WebSocket(wsUrl)
-
-  ws.onopen = () => {
-    const dims = fitAddon.proposeDimensions()
-    if (dims) {
-      ws.send(JSON.stringify({ type: 'resize', cols: dims.cols, rows: dims.rows }))
-    }
-  }
-
-  ws.onmessage = (event) => {
-    term.write(event.data)
-  }
-
-  ws.onerror = () => ws.close()
+  connectWs()
 
   term.onData((data) => {
-    if (ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(data)
     }
   })
 
   term.onResize(({ cols, rows }) => {
-    if (ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'resize', cols, rows }))
     }
   })
@@ -134,8 +189,12 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  disposed = true
+  if (reconnectTimer) clearTimeout(reconnectTimer)
   window.removeEventListener('resize', fit)
-  ws?.close()
+  if (ws) {
+    try { ws.close() } catch (e) {}
+  }
   term?.dispose()
 })
 </script>
@@ -145,7 +204,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   position: relative;
-  background: rgba(10, 10, 15, 0.85);
+  background: rgba(10, 10, 15, var(--terminal-opacity, 0.85));
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 12px;
   box-shadow: 
@@ -173,6 +232,26 @@ onUnmounted(() => {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  cursor: text;
+  transition: all 0.15s ease;
+  font-family: 'JetBrainsMono Nerd Font', monospace;
+  max-width: 200px;
+}
+
+.terminal-title:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.terminal-title:focus {
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.4);
 }
 
 .terminal-close {
@@ -196,5 +275,39 @@ onUnmounted(() => {
   flex: 1;
   margin: 12px;
   overflow: hidden;
+}
+
+.terminal-disconnected {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.reconnect-btn {
+  background: rgba(248, 113, 113, 0.2);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  border-radius: 4px;
+  color: #fca5a5;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.reconnect-btn:hover {
+  background: rgba(248, 113, 113, 0.3);
+  color: #fff;
 }
 </style>

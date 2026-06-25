@@ -1,5 +1,5 @@
 <template>
-  <Banner />
+  <Banner :opacity="opacity" @update:opacity="opacity = $event" />
   <main class="main-content">
     <div class="terminals-area">
       <ResizablePanels 
@@ -9,10 +9,12 @@
         <template #default="{ item }">
           <TerminalPane
             :id="item.id"
+            :name="item.name"
             :cwd="item.cwd"
             :canClose="terminals.length > 1"
             :ref="el => setTerminalRef(item.id, el)"
             @close="closeTerminal"
+            @rename="renameTerminal"
           />
         </template>
       </ResizablePanels>
@@ -31,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import Banner from './components/Banner.vue'
 import TerminalPane from './components/TerminalPane.vue'
 import TreePanel from './components/TreePanel.vue'
@@ -43,7 +45,9 @@ const { loadSession, saveSession: save } = useSession()
 
 const terminals = ref([])
 const treeOpen = ref(false)
+const opacity = ref(85)
 const terminalRefs = ref({})
+// Use a persistent counter that won't reset on remount or collide with saved IDs
 let terminalCounter = 0
 
 function setTerminalRef(id, el) {
@@ -54,20 +58,30 @@ function setTerminalRef(id, el) {
   }
 }
 
+// Debounced resize handler — avoids flooding xterm fit() on every mousemove
+let resizeTimer = null
 function onPanelsResize() {
-  // Refit all terminals after resize
-  Object.values(terminalRefs.value).forEach(ref => {
-    if (ref && ref.fit) {
-      ref.fit()
-    }
+  if (resizeTimer) clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(() => {
+    Object.values(terminalRefs.value).forEach(ref => {
+      if (ref && ref.fit) {
+        ref.fit()
+      }
+    })
+  }, 50)
+}
+
+function addTerminal(cwd = null, name = null) {
+  terminals.value.push({
+    id: ++terminalCounter,
+    name: name || `Terminal ${terminalCounter}`,
+    cwd
   })
 }
 
-function addTerminal(cwd = null) {
-  terminals.value.push({
-    id: ++terminalCounter,
-    cwd
-  })
+// Expose addTerminal to window for Electron tray menu integration
+if (typeof window !== 'undefined') {
+  window.nyxAddTerminal = addTerminal
 }
 
 function closeTerminal(id) {
@@ -78,26 +92,53 @@ function closeTerminal(id) {
   }
 }
 
+function renameTerminal(id, name) {
+  const term = terminals.value.find(t => t.id === id)
+  if (term) {
+    term.name = name
+  }
+}
+
 async function saveSession() {
   await save({
-    terminals: terminals.value.map(t => ({ id: t.id, cwd: t.cwd })),
-    treeOpen: treeOpen.value
+    terminals: terminals.value.map(t => ({ id: t.id, name: t.name, cwd: t.cwd })),
+    treeOpen: treeOpen.value,
+    opacity: opacity.value
   })
 }
 
-// Auto-save every 5 seconds
-setInterval(saveSession, 5000)
+// Debounced auto-save — only fires when state actually changes, not on a timer
+let saveTimer = null
+let sessionLoaded = false
+function scheduleSave() {
+  if (!sessionLoaded) return  // Don't save before initial load completes
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(saveSession, 1000)
+}
+
+// Watch for state changes and debounce-save
+watch([terminals, treeOpen, opacity], scheduleSave, { deep: true })
 
 onMounted(async () => {
   const session = await loadSession()
-  
+
+  // Seed terminalCounter from saved session to avoid ID collisions
   if (session.terminals && session.terminals.length > 0) {
-    session.terminals.forEach(t => addTerminal(t.cwd))
+    const maxId = Math.max(...session.terminals.map(t => t.id || 0))
+    terminalCounter = maxId
+    session.terminals.forEach(t => addTerminal(t.cwd, t.name))
   } else {
     addTerminal()
   }
-  
+
   treeOpen.value = session.treeOpen || false
+  opacity.value = session.opacity ?? 85
+  sessionLoaded = true
+})
+
+onUnmounted(() => {
+  if (resizeTimer) clearTimeout(resizeTimer)
+  if (saveTimer) clearTimeout(saveTimer)
 })
 </script>
 

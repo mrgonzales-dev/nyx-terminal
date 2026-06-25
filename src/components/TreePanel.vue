@@ -15,20 +15,20 @@
         :depth="0"
       />
       <div v-if="loading" class="tree-loading">Loading...</div>
+      <div v-else-if="treeError" class="tree-error">{{ treeError }}</div>
       <div v-else-if="tree.length === 0" class="tree-empty">No files</div>
     </div>
   </aside>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import TreeNode from './TreeNode.vue'
-
-const emit = defineEmits(['close'])
 
 const tree = ref([])
 const loading = ref(true)
-let ws = null
+const treeError = ref(null)
+let abortController = null
 
 function buildTree(items) {
   const root = []
@@ -40,7 +40,9 @@ function buildTree(items) {
 
   items.forEach(item => {
     const node = map[item.path]
-    const parentPath = item.path.substring(0, item.path.lastIndexOf('/'))
+    // Use last path separator to find parent (works for both / and \)
+    const sep = item.path.lastIndexOf('/')
+    const parentPath = sep >= 0 ? item.path.substring(0, sep) : ''
     if (map[parentPath]) {
       map[parentPath].children.push(node)
     } else {
@@ -51,30 +53,44 @@ function buildTree(items) {
   return root
 }
 
-function loadTree(path = '~') {
+async function loadTree(dirPath) {
   loading.value = true
-  
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'tree', path }))
+  treeError.value = null
+
+  // Cancel any in-flight request
+  if (abortController) {
+    abortController.abort()
+  }
+  abortController = new AbortController()
+
+  try {
+    const res = await fetch(`/api/tree?path=${encodeURIComponent(dirPath)}`, {
+      signal: abortController.signal
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || `HTTP ${res.status}`)
+    }
+
+    const data = await res.json()
+    tree.value = buildTree(data.items || [])
+  } catch (err) {
+    if (err.name === 'AbortError') return
+    treeError.value = err.message
+    tree.value = []
+  } finally {
+    loading.value = false
   }
 }
 
 onMounted(() => {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${protocol}//${window.location.host}`)
+  loadTree('~')
+})
 
-  ws.onopen = () => {
-    loadTree('~')
-  }
-
-  ws.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data)
-      if (data.type === 'tree') {
-        tree.value = buildTree(data.items || [])
-        loading.value = false
-      }
-    } catch (e) {}
+onUnmounted(() => {
+  if (abortController) {
+    abortController.abort()
   }
 })
 </script>
@@ -147,5 +163,10 @@ onMounted(() => {
 .tree-loading,
 .tree-empty {
   color: rgba(255, 255, 255, 0.4);
+}
+
+.tree-error {
+  color: #f87171;
+  font-size: 12px;
 }
 </style>
