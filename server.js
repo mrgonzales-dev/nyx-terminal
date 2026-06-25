@@ -5,12 +5,33 @@ const path = require('path');
 const http = require('http');
 const fs = require('fs');
 const os = require('os');
+const net = require('net');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const PORT = 3000;
+const DEFAULT_PORT = 2800;
+
+// Find an available port starting from the default
+function getAvailablePort(startPort) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    
+    server.listen(startPort, () => {
+      const port = server.address().port;
+      server.close(() => resolve(port));
+    });
+    
+    server.on('error', () => {
+      // Port is in use, try the next one
+      server.close(() => {
+        getAvailablePort(startPort + 1).then(resolve);
+      });
+    });
+  });
+}
+
 const CONFIG_DIR = path.join(os.homedir(), '.config', 'nyx');
 const SESSION_FILE = path.join(CONFIG_DIR, 'session.json');
 
@@ -164,6 +185,9 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Nyx running at http://localhost:${PORT}`);
+// Start server with dynamic port selection
+getAvailablePort(DEFAULT_PORT).then((port) => {
+  server.listen(port, () => {
+    console.log(`Nyx running at http://localhost:${port}`);
+  });
 });

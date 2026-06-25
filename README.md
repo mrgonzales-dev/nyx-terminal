@@ -49,7 +49,7 @@ npm run electron
 npm run electron:build
 ```
 
-For web, open http://localhost:3000 in your browser.
+For web, open http://localhost:2800 in your browser (or check the console for the actual port if 2800 is in use).
 
 ## Customization
 

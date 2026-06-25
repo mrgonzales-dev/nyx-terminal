@@ -6,7 +6,7 @@ let mainWindow = null
 let tray = null
 let serverProcess = null
 
-const PORT = 3000
+const DEFAULT_PORT = 2400
 const isDev = process.env.NODE_ENV === 'development'
 
 function startServer() {
@@ -24,23 +24,37 @@ function startServer() {
     console.error(`Server error: ${data}`)
   })
 
-  return new Promise((resolve) => {
-    // Wait for server to be ready
+  return new Promise((resolve, reject) => {
+    let actualPort = DEFAULT_PORT
+
+    // Poll to find the actual port the server is running on
     const checkServer = setInterval(async () => {
       try {
-        const response = await fetch(`http://localhost:${PORT}`)
+        const response = await fetch(`http://localhost:${actualPort}`)
         if (response.ok) {
           clearInterval(checkServer)
-          resolve()
+          console.log(`Server ready on port ${actualPort}`)
+          resolve(actualPort)
         }
       } catch (e) {
-        // Server not ready yet
+        // Try next port if current one fails
+        actualPort++
+        if (actualPort > DEFAULT_PORT + 100) {
+          clearInterval(checkServer)
+          reject(new Error('Could not find available port'))
+        }
       }
     }, 100)
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      clearInterval(checkServer)
+      reject(new Error('Server failed to start within 10 seconds'))
+    }, 10000)
   })
 }
 
-function createWindow() {
+function createWindow(port) {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -57,7 +71,7 @@ function createWindow() {
     titleBarStyle: 'default'
   })
 
-  mainWindow.loadURL(`http://localhost:${PORT}`)
+  mainWindow.loadURL(`http://localhost:${port}`)
 
   // Hide menu bar
   mainWindow.setMenuBarVisibility(false)
@@ -112,13 +126,13 @@ function createTray() {
 }
 
 app.whenReady().then(async () => {
-  await startServer()
-  createWindow()
+  const port = await startServer()
+  createWindow(port)
   createTray()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+      startServer().then((port) => createWindow(port))
     }
   })
 })
