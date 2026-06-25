@@ -21,7 +21,7 @@
         </button>
       </div>
     </div>
-    <div class="terminal-wrapper" ref="terminalRef" tabindex="0" @click="focusTerminal" @keydown="handleKeydown"></div>
+    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal"></div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
       <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
@@ -109,19 +109,6 @@ function focusTerminal() {
   }
 }
 
-// Handle keyboard events on wrapper
-function handleKeydown(e) {
-  console.log('Wrapper keydown:', e.key, e.code)
-  // Don't prevent default - let xterm handle it
-  // Just ensure terminal is focused
-  if (term) {
-    const textarea = terminalRef.value?.querySelector('.xterm-helper-textarea')
-    if (textarea && document.activeElement !== textarea) {
-      textarea.focus()
-    }
-  }
-}
-
 // Right-click: copy if selection, paste if no selection
 function onContextMenu(e) {
   e.preventDefault()
@@ -164,15 +151,6 @@ function connectWs() {
     if (dims) {
       ws.send(JSON.stringify({ type: 'resize', cols: dims.cols, rows: dims.rows }))
     }
-    // Focus terminal after connection
-    setTimeout(() => {
-      const textarea = terminalRef.value?.querySelector('.xterm-helper-textarea')
-      if (textarea) {
-        textarea.focus()
-      } else {
-        term.focus()
-      }
-    }, 100)
   }
 
   ws.onmessage = (event) => {
@@ -242,14 +220,6 @@ onMounted(() => {
   term.loadAddon(webLinksAddon)
   term.open(terminalRef.value)
 
-  // Debug: add event listener to canvas
-  const canvas = terminalRef.value?.querySelector('canvas')
-  if (canvas) {
-    canvas.addEventListener('keydown', (e) => {
-      console.log('Canvas keydown:', e.key, e.code)
-    })
-  }
-
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
     emit('focus', props.id)
@@ -264,12 +234,8 @@ onMounted(() => {
   connectWs()
 
   term.onData((data) => {
-    console.log('xterm onData:', JSON.stringify(data))
     if (ws && ws.readyState === WebSocket.OPEN) {
-      console.log('Sending to WebSocket:', JSON.stringify(data))
       ws.send(data)
-    } else {
-      console.log('WebSocket not ready, state:', ws?.readyState)
     }
   })
 
@@ -392,11 +358,6 @@ onUnmounted(() => {
   overflow: hidden;
   min-height: 0;
   min-width: 0;
-  outline: none;
-}
-
-.terminal-wrapper:focus {
-  outline: none;
 }
 
 .terminal-disconnected {

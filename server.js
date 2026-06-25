@@ -149,16 +149,13 @@ wss.on('connection', (ws, req) => {
 
   // Send WebSocket input to PTY
   ws.on('message', (msg) => {
-    console.log('Server received:', JSON.stringify(msg.toString()))
     try {
       const data = JSON.parse(msg);
       if (data.type === 'resize') {
-        console.log('Resize:', data.cols, data.rows)
         ptyProcess.resize(data.cols, data.rows);
       }
     } catch (e) {
       // Not JSON, send directly to PTY (raw terminal input)
-      console.log('Sending to PTY:', JSON.stringify(msg.toString()))
       ptyProcess.write(msg.toString());
     }
   });
