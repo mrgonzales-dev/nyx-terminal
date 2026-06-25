@@ -58,7 +58,6 @@ let reconnectTimer = null
 let disposed = false
 let clipboardWriteTimer = null
 let lastClipboardText = ''
-let cursorInterval = null
 
 const terminalConfig = {
   theme: {
@@ -93,7 +92,6 @@ const terminalConfig = {
   lineHeight: 1.4,
   cursorBlink: false,
   cursorStyle: 'block',
-  cursorWidth: 20,
   allowTransparency: true,
   scrollback: 10000,
   smoothScrollDuration: 100
@@ -215,28 +213,6 @@ onMounted(() => {
   term.loadAddon(webLinksAddon)
   term.open(terminalRef.value)
 
-  // Force block cursor with bright color for nvim compatibility
-  term.options.cursorStyle = 'block'
-  term.options.cursorWidth = 2
-  term.options.cursorBlink = false // Disable blink to ensure visibility
-
-  // Force cursor class to block (nvim compatibility)
-  const forceBlockCursor = () => {
-    const cursor = terminalRef.value?.querySelector('.xterm-cursor')
-    if (cursor) {
-      cursor.classList.remove('xterm-cursor-outline', 'xterm-cursor-bar', 'xterm-cursor-underline')
-      cursor.classList.add('xterm-cursor-block')
-      cursor.style.width = 'auto'
-      cursor.style.minWidth = '8px'
-      cursor.style.maxWidth = '8px'
-      cursor.style.height = '14px'
-      cursor.style.backgroundColor = '#ffffff'
-    }
-  }
-  // Force immediately and then periodically
-  forceBlockCursor()
-  cursorInterval = setInterval(forceBlockCursor, 100)
-
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
     emit('focus', props.id)
@@ -269,8 +245,6 @@ onUnmounted(() => {
     try { ws.close() } catch (e) {}
   }
   term?.dispose()
-  // Clear cursor intervals
-  if (cursorInterval) clearInterval(cursorInterval)
 })
 </script>
 
@@ -405,5 +379,12 @@ onUnmounted(() => {
 .reconnect-btn:hover {
   background: rgba(248, 113, 113, 0.3);
   color: #fff;
+}
+
+/* Fix cursor to be full height and narrow */
+.terminal-wrapper :deep(.xterm-cursor) {
+  width: 8px !important;
+  height: 100% !important;
+  background-color: #ffffff !important;
 }
 </style>
