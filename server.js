@@ -10,12 +10,30 @@ const app = express();
 const server = http.createServer(app);
 
 // Allowed origins for WebSocket connections (prevent CSRF/RCE from other pages)
+// Allow any localhost port in dev (Vite may pick 5173, 5174, etc. if port is taken)
 const ALLOWED_ORIGINS = [
   'http://localhost:2800',
   'http://127.0.0.1:2800',
   'http://localhost:5173',
-  'http://127.0.0.1:5173'
-];
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174'
+]
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true  // Non-browser clients (Electron) may not send origin
+  if (ALLOWED_ORIGINS.includes(origin)) return true
+  // Allow any localhost/127.0.0.1 port in dev mode
+  if (process.env.ELECTRON !== 'true') {
+    try {
+      const url = new URL(origin)
+      if ((url.hostname === 'localhost' || url.hostname === '127.0.0.1') && url.protocol === 'http:') {
+        return true
+      }
+    } catch (e) {}
+  }
+  return false
+}
 
 // Dynamic port: 0 lets the OS assign an available port (no TOCTOU race)
 const wss = new WebSocket.Server({ server });
@@ -162,7 +180,7 @@ process.on('SIGINT', () => {
 wss.on('connection', (ws, req) => {
   // Security: validate origin to prevent cross-site WebSocket hijacking
   const origin = req.headers.origin;
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+  if (!isAllowedOrigin(origin)) {
     ws.close(1008, 'Origin not allowed');
     return;
   }
