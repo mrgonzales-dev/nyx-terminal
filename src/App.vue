@@ -1,34 +1,44 @@
 <template>
   <Banner :opacity="opacity" @update:opacity="opacity = $event" />
   <main class="main-content">
-    <div class="terminals-area">
-      <SplitNode
-        :node="layout"
-        :terminals="terminals"
-        :terminalRefs="terminalRefs"
-        :canClose="terminals.length > 1"
-        :activeId="activeTerminalId"
-        :maxReached="terminals.length >= MAX_TERMINALS"
-        @close="closeTerminal"
-        @rename="renameTerminal"
-        @split="splitTerminal"
-        @focus="setActiveTerminal"
-        @resize="onPanelsResize"
-      />
+    <div class="terminals-area" ref="areaRef">
+      <template v-for="cell in flatCells" :key="'cell-' + cell.leaf.terminalId">
+        <TerminalPane
+          :id="cell.leaf.terminalId"
+          :name="termName(cell.leaf.terminalId)"
+          :cwd="termCwd(cell.leaf.terminalId)"
+          :canClose="terminals.length > 1"
+          :isActive="activeTerminalId === cell.leaf.terminalId"
+          :maxReached="terminals.length >= MAX_TERMINALS"
+          :ref="(el) => { if (el) terminalRefs[cell.leaf.terminalId] = el }"
+          :style="{
+            position: 'absolute',
+            left: cell.x + '%',
+            top: cell.y + '%',
+            width: cell.w + '%',
+            height: cell.h + '%',
+            boxSizing: 'border-box'
+          }"
+          @close="closeTerminal"
+          @rename="renameTerminal"
+          @split="splitTerminal"
+          @focus="setActiveTerminal"
+        />
+      </template>
     </div>
   </main>
   <FooterBar
     :maxReached="terminals.length >= MAX_TERMINALS"
-    @add-terminal="addTerminalHorizontal"
+    @add-terminal="addTerminal"
     @save="saveSession"
   />
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import Banner from './components/Banner.vue'
 import FooterBar from './components/FooterBar.vue'
-import SplitNode from './components/SplitNode.vue'
+import TerminalPane from './components/TerminalPane.vue'
 import { useSession } from './composables/useSession'
 
 const { loadSession, saveSession: save } = useSession()
@@ -37,53 +47,100 @@ const terminals = ref([])
 const opacity = ref(85)
 const activeTerminalId = ref(null)
 const terminalRefs = ref({})
+const areaRef = ref(null)
 let terminalCounter = 0
 const MAX_TERMINALS = 4
 
-// Layout tree: { type: 'leaf', terminalId } or { type: 'split', direction, children: [], sizes: [] }
-const layout = ref({ type: 'leaf', terminalId: null })
+// Layout tree — pure data, no recursive rendering
+const layout = ref({ type: 'split', direction: 'horizontal', children: [], sizes: [] })
+
+function termName(id) {
+  return terminals.value.find(t => t.id === id)?.name || 'nyx terminal'
+}
+function termCwd(id) {
+  return terminals.value.find(t => t.id === id)?.cwd || null
+}
+
+// Flatten tree to absolute-positioned cells (with gap inset)
+const GAP = 0.4 // % gap between terminals
+
+function flattenTree(node, x, y, w, h) {
+  if (node.type === 'leaf') {
+    return [{ leaf: node, x: x + GAP, y: y + GAP, w: w - GAP * 2, h: h - GAP * 2 }]
+  }
+  if (!node.children || node.children.length === 0) return []
+  if (node.children.length === 1) {
+    return flattenTree(node.children[0], x, y, w, h)
+  }
+
+  const sizes = node.sizes || node.children.map(() => 100 / node.children.length)
+  const cells = []
+
+  if (node.direction === 'horizontal') {
+    let cx = x
+    const total = sizes.reduce((a, b) => a + b, 0) || 100
+    for (let i = 0; i < node.children.length; i++) {
+      const cw = (w * sizes[i]) / total
+      cells.push(...flattenTree(node.children[i], cx, y, cw, h))
+      cx += cw
+    }
+  } else {
+    let cy = y
+    const total = sizes.reduce((a, b) => a + b, 0) || 100
+    for (let i = 0; i < node.children.length; i++) {
+      const ch = (h * sizes[i]) / total
+      cells.push(...flattenTree(node.children[i], x, cy, w, ch))
+      cy += ch
+    }
+  }
+
+  return cells
+}
+
+const flatCells = computed(() => {
+  return flattenTree(layout.value, 0, 0, 100, 100)
+})
 
 function onPanelsResize() {
   Object.values(terminalRefs.value).forEach(ref => {
-    if (ref && ref.fit) {
-      ref.fit()
-    }
+    if (ref && ref.fit) ref.fit()
   })
 }
 
 function createTerminal(cwd = null, name = null) {
   const id = ++terminalCounter
-  terminals.value.push({
-    id,
-    name: name || 'nyx terminal',
-    cwd
-  })
+  terminals.value.push({ id, name: name || 'nyx terminal', cwd })
   return id
 }
 
-function addTerminal(cwd = null, name = null) {
-  const id = createTerminal(cwd, name)
-  layout.value = { type: 'leaf', terminalId: id }
+function addTerminal() {
+  const id = createTerminal(null)
+  // Add to layout tree
+  const leaf = { type: 'leaf', terminalId: id }
+  layout.value.children.push(leaf)
+  const equal = 100 / layout.value.children.length
+  layout.value.sizes = Array(layout.value.children.length).fill(equal)
   activeTerminalId.value = id
+  nextTick(onPanelsResize)
 }
 
 if (typeof window !== 'undefined') {
-  window.nyxAddTerminal = addTerminalHorizontal
+  window.nyxAddTerminal = addTerminal
 }
 
-// Find leaf node in tree by terminalId
-function findLeaf(node, terminalId) {
-  if (node.type === 'leaf' && node.terminalId === terminalId) return node
+// Find parent node containing leaf with terminalId
+function findParent(node, id) {
   if (node.type === 'split') {
     for (const child of node.children) {
-      const found = findLeaf(child, terminalId)
+      if (child.type === 'leaf' && child.terminalId === id) return node
+      const found = findParent(child, id)
       if (found) return found
     }
   }
   return null
 }
 
-// i3-style split: replace focused terminal's leaf with a split node
+// Split: insert new leaf as sibling in the tree
 async function splitTerminal(terminalId, direction) {
   const id = terminalId || activeTerminalId.value
   if (!id) return
@@ -91,57 +148,64 @@ async function splitTerminal(terminalId, direction) {
 
   activeTerminalId.value = id
 
-  // Get actual cwd from the terminal's PTY process
+  // Get live cwd from the source terminal's PTY (with timeout fallback)
   let cwd = null
   const termRef = terminalRefs.value[id]
   if (termRef && termRef.getCwd) {
-    cwd = await termRef.getCwd()
+    try {
+      cwd = await Promise.race([
+        termRef.getCwd(),
+        new Promise(r => setTimeout(() => r(null), 1000))
+      ])
+    } catch (e) {
+      cwd = null
+    }
+  }
+  // Fallback to stored cwd if live fetch failed
+  if (!cwd) {
+    const sourceTerm = terminals.value.find(t => t.id === id)
+    cwd = sourceTerm?.cwd || null
   }
 
-  const leaf = findLeaf(layout.value, id)
-  if (!leaf) return
+  // Find the leaf in the tree and determine where to insert
+  const parent = findParent(layout.value, id)
+  let idx = -1
+  let targetParent = null
+
+  if (!parent) {
+    idx = layout.value.children.findIndex(c => c.type === 'leaf' && c.terminalId === id)
+    if (idx === -1) return
+    targetParent = layout.value
+  } else {
+    idx = parent.children.findIndex(c => c.type === 'leaf' && c.terminalId === id)
+    if (idx === -1) return
+    targetParent = parent
+  }
+
+  // Create terminal AFTER validation (avoids orphans)
   const newId = createTerminal(cwd)
 
-  // Mutate leaf in-place into a split
-  const oldTerminalId = leaf.terminalId
-  leaf.type = 'split'
-  leaf.direction = direction
-  leaf.children = [
-    { type: 'leaf', terminalId: oldTerminalId },
-    { type: 'leaf', terminalId: newId }
-  ]
-  leaf.sizes = [50, 50]
-  delete leaf.terminalId
-
-  activeTerminalId.value = newId
-  setTimeout(onPanelsResize, 50)
-}
-
-// Footer "New Terminal" — fresh terminal at home, added horizontally
-function addTerminalHorizontal() {
-  if (!activeTerminalId.value) {
-    addTerminal()
-    return
+  if (targetParent.direction === direction) {
+    // Same direction — add sibling directly
+    targetParent.children.splice(idx + 1, 0, { type: 'leaf', terminalId: newId })
+    const equal = 100 / targetParent.children.length
+    targetParent.sizes = Array(targetParent.children.length).fill(equal)
+  } else {
+    // Different direction — wrap old + new in a nested split
+    targetParent.children[idx] = {
+      type: 'split',
+      direction,
+      children: [
+        { type: 'leaf', terminalId: id },
+        { type: 'leaf', terminalId: newId }
+      ],
+      sizes: [50, 50]
+    }
+    targetParent.sizes = Array(targetParent.children.length).fill(100 / targetParent.children.length)
   }
-  if (terminals.value.length >= MAX_TERMINALS) return
-  // Split active terminal horizontally but with home cwd (not inherited)
-  const id = activeTerminalId.value
-  const leaf = findLeaf(layout.value, id)
-  if (!leaf) return
-  const newId = createTerminal(null) // null = home
-
-  const oldTerminalId = leaf.terminalId
-  leaf.type = 'split'
-  leaf.direction = 'horizontal'
-  leaf.children = [
-    { type: 'leaf', terminalId: oldTerminalId },
-    { type: 'leaf', terminalId: newId }
-  ]
-  leaf.sizes = [50, 50]
-  delete leaf.terminalId
 
   activeTerminalId.value = newId
-  setTimeout(onPanelsResize, 50)
+  nextTick(onPanelsResize)
 }
 
 function closeTerminal(id) {
@@ -150,28 +214,19 @@ function closeTerminal(id) {
   // Remove from layout tree
   function removeFromTree(node) {
     if (node.type !== 'split') return
-
     node.children = node.children.filter(child => {
-      if (child.type === 'leaf' && child.terminalId === id) {
-        return false
-      }
+      if (child.type === 'leaf' && child.terminalId === id) return false
       if (child.type === 'split') {
         removeFromTree(child)
-        if (child.type === 'split' && child.children.length === 1) {
-          const only = child.children[0]
-          Object.assign(child, only)
+        if (child.children.length === 1) {
+          Object.assign(child, child.children[0])
         }
       }
       return true
     })
-
-    // Collapse if only 1 child remains
     if (node.children.length === 1) {
-      const only = node.children[0]
-      Object.assign(node, only)
+      Object.assign(node, node.children[0])
     }
-
-    // Rebalance sizes
     if (node.type === 'split' && node.children.length > 0) {
       const equal = 100 / node.children.length
       node.sizes = Array(node.children.length).fill(equal)
@@ -180,20 +235,15 @@ function closeTerminal(id) {
 
   removeFromTree(layout.value)
 
-  // Root collapse
-  if (layout.value.type === 'split' && layout.value.children.length === 1) {
-    layout.value = layout.value.children[0]
-  }
-
-  // Remove from terminals array
+  // Remove from terminals
   terminals.value = terminals.value.filter(t => t.id !== id)
+  delete terminalRefs.value[id]
 
   if (activeTerminalId.value === id) {
     activeTerminalId.value = terminals.value[0]?.id || null
   }
 
-  delete terminalRefs.value[id]
-  setTimeout(onPanelsResize, 50)
+  nextTick(onPanelsResize)
 }
 
 function renameTerminal(id, name) {
@@ -206,9 +256,7 @@ function setActiveTerminal(id) {
 }
 
 function serializeLayout(node) {
-  if (node.type === 'leaf') {
-    return { type: 'leaf', terminalId: node.terminalId }
-  }
+  if (node.type === 'leaf') return { type: 'leaf', terminalId: node.terminalId }
   return {
     type: 'split',
     direction: node.direction,
@@ -219,26 +267,13 @@ function serializeLayout(node) {
 
 function deserializeLayout(node) {
   if (!node) return null
-  if (node.type === 'leaf') {
-    return { type: 'leaf', terminalId: node.terminalId }
-  }
+  if (node.type === 'leaf') return { type: 'leaf', terminalId: node.terminalId }
   return {
     type: 'split',
     direction: node.direction,
     children: (node.children || []).map(deserializeLayout),
     sizes: [...(node.sizes || [])]
   }
-}
-
-// Get all terminal IDs referenced in a layout tree
-function getTerminalIdsFromLayout(node) {
-  if (node.type === 'leaf') {
-    return [node.terminalId]
-  }
-  if (node.type === 'split') {
-    return node.children.flatMap(getTerminalIdsFromLayout)
-  }
-  return []
 }
 
 async function saveSession() {
@@ -266,21 +301,19 @@ onMounted(async () => {
     const maxId = Math.max(...session.terminals.map(t => t.id || 0))
     terminalCounter = maxId
     session.terminals.forEach(t => {
-      terminals.value.push({
-        id: t.id,
-        name: t.name || 'nyx terminal',
-        cwd: t.cwd
-      })
+      terminals.value.push({ id: t.id, name: t.name || 'nyx terminal', cwd: t.cwd })
     })
 
-    if (session.layout) {
+    if (session.layout && session.layout.type === 'split' && session.layout.children?.length > 0) {
       layout.value = deserializeLayout(session.layout)
-      // Remove orphaned terminals not referenced in layout
-      const layoutIds = new Set(getTerminalIdsFromLayout(layout.value))
-      terminals.value = terminals.value.filter(t => layoutIds.has(t.id))
     } else {
-      // Backward compat: no layout, use first terminal as root leaf
-      layout.value = { type: 'leaf', terminalId: session.terminals[0].id }
+      // No layout or old format — build flat horizontal row
+      layout.value = {
+        type: 'split',
+        direction: 'horizontal',
+        children: session.terminals.map(t => ({ type: 'leaf', terminalId: t.id })),
+        sizes: session.terminals.map(() => 100 / session.terminals.length)
+      }
     }
 
     activeTerminalId.value = terminals.value[0]?.id || null
@@ -290,6 +323,7 @@ onMounted(async () => {
 
   opacity.value = session.opacity ?? 85
   sessionLoaded = true
+  nextTick(onPanelsResize)
 })
 
 onUnmounted(() => {
@@ -309,7 +343,7 @@ onUnmounted(() => {
 
 .terminals-area {
   flex: 1;
-  display: flex;
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
