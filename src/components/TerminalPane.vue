@@ -242,14 +242,14 @@ onMounted(() => {
   const cursorEl = document.createElement('div')
   cursorEl.className = 'custom-cursor'
   cursorEl.id = `custom-cursor-${props.id}`
-  // Force inline styles to ensure visibility
+  // Normal cursor styling
   cursorEl.style.position = 'fixed'
-  cursorEl.style.width = '100px'
-  cursorEl.style.height = '100px'
-  cursorEl.style.backgroundColor = '#ff00ff'
-  cursorEl.style.border = '10px solid #00ffff'
-  cursorEl.style.boxShadow = '0 0 50px #ff00ff, 0 0 100px #ff00ff'
-  cursorEl.style.zIndex = '999999'
+  cursorEl.style.width = '14px'
+  cursorEl.style.height = '20px'
+  cursorEl.style.backgroundColor = '#00ff00'
+  cursorEl.style.border = 'none'
+  cursorEl.style.boxShadow = 'none'
+  cursorEl.style.zIndex = '100'
   cursorEl.style.pointerEvents = 'none'
   cursorEl.style.transition = 'all 0.05s ease'
   document.body.appendChild(cursorEl)
@@ -263,9 +263,6 @@ onMounted(() => {
       const rect = cursor.getBoundingClientRect()
       custom.style.left = rect.left + 'px'
       custom.style.top = rect.top + 'px'
-      // Pulse effect
-      const time = Date.now() / 1000
-      custom.style.opacity = 0.5 + 0.5 * Math.sin(time * Math.PI * 2)
     }
   }
   updateCustomCursor()
@@ -446,30 +443,15 @@ onUnmounted(() => {
   color: #fff;
 }
 
-/* Force block cursor visibility for nvim */
-.terminal-wrapper :deep(.xterm-cursor) {
-  background-color: #ff0000 !important;
-  color: #ffffff !important;
-  outline: 5px solid #ff0000 !important;
-  box-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000 !important;
-  border: 5px solid #ff0000 !important;
-  width: auto !important;
-  min-width: 20px !important;
-  max-width: 20px !important;
-  height: 30px !important;
-  z-index: 9999 !important;
-  position: relative !important;
-}
-
 /* Custom cursor overlay as fallback */
 .custom-cursor {
   position: fixed;
-  width: 30px;
-  height: 40px;
-  background-color: #ffff00;
-  border: 5px solid #000000;
-  box-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00;
-  z-index: 10000;
+  width: 14px;
+  height: 20px;
+  background-color: #00ff00;
+  border: none;
+  box-shadow: none;
+  z-index: 100;
   pointer-events: none;
   transition: all 0.05s ease;
 }
