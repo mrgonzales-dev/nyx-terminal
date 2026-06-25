@@ -15,7 +15,6 @@
         <TerminalPane
           :id="cell.leaf.terminalId"
           :name="termName(cell.leaf.terminalId)"
-          :cwd="termCwd(cell.leaf.terminalId)"
           :canClose="terminals.length > 1"
           :isActive="activeTerminalId === cell.leaf.terminalId"
           :maxReached="terminals.length >= MAX_TERMINALS"
@@ -67,9 +66,6 @@ const layout = ref({ type: 'split', direction: 'horizontal', children: [], sizes
 function termName(id) {
   return terminals.value.find(t => t.id === id)?.name || 'nyx terminal'
 }
-function termCwd(id) {
-  return terminals.value.find(t => t.id === id)?.cwd || null
-}
 
 // Flatten tree to absolute-positioned cells (with gap inset)
 const GAP = 0.4 // % gap between terminals
@@ -117,19 +113,35 @@ function onPanelsResize() {
   })
 }
 
-function createTerminal(cwd = null, name = null) {
+function createTerminal(name = null) {
   const id = ++terminalCounter
-  terminals.value.push({ id, name: name || 'nyx terminal', cwd })
+  terminals.value.push({ id, name: name || 'nyx terminal' })
   return id
 }
 
 function addTerminal() {
-  const id = createTerminal(null)
-  // Add to layout tree
+  const id = createTerminal()
   const leaf = { type: 'leaf', terminalId: id }
-  layout.value.children.push(leaf)
-  const equal = 100 / layout.value.children.length
-  layout.value.sizes = Array(layout.value.children.length).fill(equal)
+
+  // If root is a leaf (single terminal after close collapsed it),
+  // wrap it in a split so we can add the new sibling
+  if (layout.value.type === 'leaf') {
+    const existingId = layout.value.terminalId
+    layout.value = {
+      type: 'split',
+      direction: 'horizontal',
+      children: [
+        { type: 'leaf', terminalId: existingId },
+        leaf
+      ],
+      sizes: [50, 50]
+    }
+  } else {
+    layout.value.children.push(leaf)
+    const equal = 100 / layout.value.children.length
+    layout.value.sizes = Array(layout.value.children.length).fill(equal)
+  }
+
   activeTerminalId.value = id
   nextTick(onPanelsResize)
 }
@@ -168,8 +180,23 @@ function splitTerminal(terminalId, direction) {
   if (terminals.value.length >= MAX_TERMINALS) return
 
   activeTerminalId.value = id
-  const sourceTerm = terminals.value.find(t => t.id === id)
-  const cwd = sourceTerm?.cwd || null
+
+  // If root is a leaf (single terminal), replace it with a split
+  if (layout.value.type === 'leaf') {
+    const newId = createTerminal()
+    layout.value = {
+      type: 'split',
+      direction,
+      children: [
+        { type: 'leaf', terminalId: id },
+        { type: 'leaf', terminalId: newId }
+      ],
+      sizes: [50, 50]
+    }
+    activeTerminalId.value = newId
+    nextTick(onPanelsResize)
+    return
+  }
 
   const parent = findParent(layout.value, id)
   let idx = -1
@@ -185,7 +212,7 @@ function splitTerminal(terminalId, direction) {
     targetParent = parent
   }
 
-  const newId = createTerminal(cwd)
+  const newId = createTerminal()
 
   // Clone entire layout tree, apply mutation to clone, then replace
   const newLayout = cloneLayout(layout.value)
@@ -306,7 +333,7 @@ function getTerminalIdsFromLayout(node) {
 
 async function saveSession() {
   await save({
-    terminals: terminals.value.map(t => ({ id: t.id, name: t.name, cwd: t.cwd })),
+    terminals: terminals.value.map(t => ({ id: t.id, name: t.name })),
     opacity: opacity.value,
     layout: serializeLayout(layout.value)
   })
@@ -329,7 +356,7 @@ onMounted(async () => {
     const maxId = Math.max(...session.terminals.map(t => t.id || 0))
     terminalCounter = maxId
     session.terminals.forEach(t => {
-      terminals.value.push({ id: t.id, name: t.name || 'nyx terminal', cwd: t.cwd })
+      terminals.value.push({ id: t.id, name: t.name || 'nyx terminal' })
     })
 
     if (session.layout && session.layout.type === 'split' && session.layout.children?.length > 0) {
@@ -357,7 +384,7 @@ onMounted(async () => {
   sessionLoaded = true
   nextTick(onPanelsResize)
 
-  // Hold loader for 3s so the OSC 7 snippet clears before terminals show
+  // Hold loader for 3s so shell init clears before terminals show
   setTimeout(() => { loading.value = false }, 3000)
 })
 

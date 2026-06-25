@@ -56,7 +56,7 @@ function loadSession() {
   } catch (err) {
     console.error('Failed to load session:', err.message);
   }
-  return { terminals: [{ id: 1, cwd: os.homedir() }] };
+  return { terminals: [{ id: 1 }] };
 }
 
 // Save session
@@ -86,20 +86,6 @@ app.get('/api/session', (req, res) => {
 app.post('/api/session', (req, res) => {
   saveSession(req.body);
   res.json({ ok: true });
-});
-
-// HTTP getcwd endpoint — read cwd from /proc without polluting the PTY
-app.get('/api/cwd', (req, res) => {
-  const pid = parseInt(req.query.pid, 10);
-  if (!pid) {
-    return res.status(400).json({ error: 'Missing pid' });
-  }
-  try {
-    const cwd = fs.readlinkSync(`/proc/${pid}/cwd`);
-    res.json({ cwd });
-  } catch (e) {
-    res.status(500).json({ error: 'Could not read cwd', cwd: null });
-  }
 });
 
 // Track active PTY processes for cleanup
@@ -138,14 +124,8 @@ wss.on('connection', (ws, req) => {
 
   console.log('Client connected');
 
-  // Parse cwd from query string
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  let initialCwd = url.searchParams.get('cwd') || os.homedir();
-
-  // Validate cwd exists
-  if (!fs.existsSync(initialCwd)) {
-    initialCwd = os.homedir();
-  }
+  // Always spawn at home directory
+  const homeDir = os.homedir();
 
   // Create PTY
   const shell = process.env.SHELL || 'bash';
@@ -153,13 +133,12 @@ wss.on('connection', (ws, req) => {
     name: 'xterm-256color',
     cols: 80,
     rows: 24,
-    cwd: initialCwd,
+    cwd: homeDir,
     env: { ...process.env, TERM: 'xterm-256color' }
   });
 
   activePtys.add(ptyProcess);
 
-  let currentCwd = initialCwd;
 
   // Send PTY output to WebSocket
   ptyProcess.on('data', (data) => {
@@ -174,14 +153,6 @@ wss.on('connection', (ws, req) => {
       const data = JSON.parse(msg);
       if (data.type === 'resize') {
         ptyProcess.resize(data.cols, data.rows);
-      } else if (data.type === 'getcwd') {
-        let cwd = null;
-        try {
-          cwd = fs.readlinkSync(`/proc/${ptyProcess.pid}/cwd`);
-        } catch (e) {
-          cwd = currentCwd || null;
-        }
-        ws.send(JSON.stringify({ type: 'cwd', cwd }));
       }
     } catch (e) {
       // Not JSON, send directly to PTY (raw terminal input)

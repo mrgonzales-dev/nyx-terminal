@@ -19,7 +19,6 @@ Most web terminals are demos. Nyx is built to be your daily driver.
 - **Real PTY** — Full terminal emulation backed by `node-pty`. No fake shells, no shortcuts.
 - **Apps survive splits** — Split a pane while `htop` is running. It keeps running. Flat rendering with stable keys means no component destruction.
 - **i3-style tiling** — Horizontal and vertical splits, nested as deep as you need. Close a pane and the layout collapses cleanly.
-- **CWD inheritance** — New splits open in the same directory as their parent, via OSC 7 and `/proc/<pid>/cwd`.
 - **Web + desktop** — Run it in the browser, or ship it as an Electron app with tray icon and native integrations.
 - **Dark HUD aesthetic** — Deep blacks, purple accents, subtle glow on the focused pane. Built to look good and stay out of your way.
 - **Session persistence** — Layout, names, opacity — all saved and restored on reload. Orphaned terminals cleaned up automatically.
@@ -76,7 +75,6 @@ npm run electron:dev
 ### Splitting panes
 
 - Click the **split icon** in a pane's header to split horizontally or vertically
-- The new pane inherits the current working directory of its parent
 - Use **New Terminal** in the footer for a fresh pane at your home directory
 - Close a pane with the × button — the layout collapses automatically
 

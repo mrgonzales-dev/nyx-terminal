@@ -40,7 +40,6 @@ import 'xterm/css/xterm.css'
 const props = defineProps({
   id: { type: Number, required: true },
   name: { type: String, default: '' },
-  cwd: { type: String, default: null },
   canClose: { type: Boolean, default: true },
   isActive: { type: Boolean, default: false },
   maxReached: { type: Boolean, default: false }
@@ -57,7 +56,6 @@ let ws = null
 let reconnectAttempts = 0
 let reconnectTimer = null
 let disposed = false
-let pendingCwdResolve = null
 
 const terminalConfig = {
   theme: {
@@ -128,9 +126,7 @@ function fit() {
 function buildWsUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const base = `${protocol}//${window.location.host}/ws`
-  return props.cwd
-    ? `${base}?cwd=${encodeURIComponent(props.cwd)}`
-    : base
+  return base
 }
 
 function connectWs() {
@@ -146,19 +142,6 @@ function connectWs() {
   }
 
   ws.onmessage = (event) => {
-    // Intercept JSON control messages (cwd response)
-    if (typeof event.data === 'string' && event.data.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(event.data)
-        if (parsed.type === 'cwd') {
-          pendingCwdResolve?.(parsed.cwd)
-          pendingCwdResolve = null
-          return
-        }
-      } catch (e) {
-        // Not JSON — it's terminal output, write it
-      }
-    }
     term.write(event.data)
   }
 
@@ -192,25 +175,8 @@ function reconnect() {
   connectWs()
 }
 
-// Get current working directory via WS control message (server reads OSC 7
-// state or /proc/<pid>/cwd — no HTTP roundtrip, no PID race condition)
-async function getCwd() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return null
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      pendingCwdResolve = null
-      resolve(null)
-    }, 2000)
-    pendingCwdResolve = (cwd) => {
-      clearTimeout(timeout)
-      resolve(cwd)
-    }
-    ws.send(JSON.stringify({ type: 'getcwd' }))
-  })
-}
-
-// Expose fit and getCwd to parent
-defineExpose({ fit, getCwd })
+// Expose fit to parent
+defineExpose({ fit })
 
 onMounted(() => {
   term = new Terminal(terminalConfig)

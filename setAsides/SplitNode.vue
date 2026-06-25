@@ -10,7 +10,6 @@
           v-if="child.type === 'leaf'"
           :id="terminalFor(child).id"
           :name="terminalFor(child).name"
-          :cwd="terminalFor(child).cwd"
           :canClose="canClose"
           :isActive="activeId === terminalFor(child).id"
           :maxReached="maxReached"
