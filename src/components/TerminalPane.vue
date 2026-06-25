@@ -21,7 +21,9 @@
         </button>
       </div>
     </div>
-    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal"></div>
+    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal">
+      <div v-if="isActive" class="custom-cursor" ref="customCursor"></div>
+    </div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
       <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
@@ -48,6 +50,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'rename', 'split', 'focus'])
 
 const terminalRef = ref(null)
+const customCursor = ref(null)
 const disconnected = ref(false)
 const editing = ref(false)
 let term = null
@@ -59,6 +62,7 @@ let disposed = false
 let clipboardWriteTimer = null
 let lastClipboardText = ''
 let cursorInterval = null
+let customCursorInterval = null
 
 const terminalConfig = {
   theme: {
@@ -236,6 +240,20 @@ onMounted(() => {
   forceBlockCursor()
   cursorInterval = setInterval(forceBlockCursor, 100)
 
+  // Custom cursor positioning
+  const updateCustomCursor = () => {
+    const cursor = terminalRef.value?.querySelector('.xterm-cursor')
+    const custom = customCursor.value
+    if (cursor && custom) {
+      const rect = cursor.getBoundingClientRect()
+      const wrapperRect = terminalRef.value.getBoundingClientRect()
+      custom.style.left = (rect.left - wrapperRect.left) + 'px'
+      custom.style.top = (rect.top - wrapperRect.top) + 'px'
+    }
+  }
+  updateCustomCursor()
+  const customCursorInterval = setInterval(updateCustomCursor, 50)
+
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
     emit('focus', props.id)
@@ -268,8 +286,9 @@ onUnmounted(() => {
     try { ws.close() } catch (e) {}
   }
   term?.dispose()
-  // Clear cursor interval
+  // Clear cursor intervals
   if (cursorInterval) clearInterval(cursorInterval)
+  if (customCursorInterval) clearInterval(customCursorInterval)
 })
 </script>
 
@@ -419,5 +438,18 @@ onUnmounted(() => {
   height: 30px !important;
   z-index: 9999 !important;
   position: relative !important;
+}
+
+/* Custom cursor overlay as fallback */
+.custom-cursor {
+  position: absolute;
+  width: 20px;
+  height: 30px;
+  background-color: #ff0000;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
+  z-index: 10000;
+  pointer-events: none;
+  transition: all 0.05s ease;
 }
 </style>
