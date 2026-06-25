@@ -21,7 +21,7 @@
         </button>
       </div>
     </div>
-    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal"></div>
+    <div class="terminal-wrapper" ref="terminalRef" tabindex="0" @click="focusTerminal" @keydown="handleKeydown"></div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
       <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
@@ -105,6 +105,19 @@ function focusTerminal() {
       textarea.focus()
     } else {
       term.focus()
+    }
+  }
+}
+
+// Handle keyboard events on wrapper
+function handleKeydown(e) {
+  console.log('Wrapper keydown:', e.key, e.code)
+  // Don't prevent default - let xterm handle it
+  // Just ensure terminal is focused
+  if (term) {
+    const textarea = terminalRef.value?.querySelector('.xterm-helper-textarea')
+    if (textarea && document.activeElement !== textarea) {
+      textarea.focus()
     }
   }
 }
@@ -379,6 +392,11 @@ onUnmounted(() => {
   overflow: hidden;
   min-height: 0;
   min-width: 0;
+  outline: none;
+}
+
+.terminal-wrapper:focus {
+  outline: none;
 }
 
 .terminal-disconnected {
