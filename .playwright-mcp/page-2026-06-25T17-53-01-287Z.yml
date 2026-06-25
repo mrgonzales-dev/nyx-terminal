@@ -1,0 +1,52 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: ">"
+      - generic [ref=e6]: _
+      - heading "NYX" [level=1] [ref=e7]
+      - generic [ref=e8]: terminal
+    - banner [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Nyx" [level=1] [ref=e11]
+        - generic [ref=e12]: Terminal Emulator
+      - button "Settings" [ref=e14] [cursor=pointer]:
+        - img [ref=e15]
+    - main [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - textbox [ref=e22]: nyx terminal
+            - generic [ref=e23]:
+              - button "Split terminal" [ref=e25] [cursor=pointer]:
+                - img [ref=e26]
+              - button "×" [ref=e28] [cursor=pointer]
+          - generic [ref=e32]:
+            - textbox "Terminal input" [ref=e33]
+            - generic [ref=e34]:
+              - generic [ref=e35]:
+                - generic [ref=e36]: ~
+                - generic [ref=e38]: 01:53:01 AM
+              - generic [ref=e40]: ❯
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - textbox [ref=e55]: nyx terminal
+            - generic [ref=e56]:
+              - button "Split terminal" [ref=e58] [cursor=pointer]:
+                - img [ref=e59]
+              - button "×" [ref=e61] [cursor=pointer]
+          - generic [ref=e65]:
+            - textbox "Terminal input" [active] [ref=e66]
+            - generic [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]: ~
+                - generic [ref=e71]: 01:53:01 AM
+              - generic [ref=e73]: ❯
+    - contentinfo [ref=e86]:
+      - button "New Terminal" [ref=e87] [cursor=pointer]:
+        - img [ref=e88]
+        - text: New Terminal
+      - button "Save" [ref=e90] [cursor=pointer]:
+        - img [ref=e91]
+        - text: Save
+  - generic [ref=e95]: ❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯
+  - generic [ref=e96]: ❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯❯

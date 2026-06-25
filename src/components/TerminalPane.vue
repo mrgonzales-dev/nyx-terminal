@@ -63,8 +63,8 @@ const terminalConfig = {
   theme: {
     background: 'transparent',
     foreground: '#e4e4e7',
-    cursor: '#a78bfa',
-    cursorAccent: '#0a0a0f',
+    cursor: '#00ff00',
+    cursorAccent: '#000000',
     selectionBackground: 'rgba(167, 139, 250, 0.3)',
     selectionForeground: '#ffffff',
     black: '#18181b',
@@ -90,9 +90,9 @@ const terminalConfig = {
   fontWeightBold: '900',
   letterSpacing: 0,
   lineHeight: 1.4,
-  cursorBlink: true,
-  cursorStyle: 'bar',
-  cursorWidth: 2,
+  cursorBlink: false,
+  cursorStyle: 'block',
+  cursorWidth: 8,
   allowTransparency: true,
   scrollback: 10000,
   smoothScrollDuration: 100
@@ -213,6 +213,11 @@ onMounted(() => {
   term.loadAddon(fitAddon)
   term.loadAddon(webLinksAddon)
   term.open(terminalRef.value)
+
+  // Force block cursor with bright color for nvim compatibility
+  term.options.cursorStyle = 'block'
+  term.options.cursorWidth = 8
+  term.options.cursorBlink = false // Disable blink to ensure visibility
 
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
