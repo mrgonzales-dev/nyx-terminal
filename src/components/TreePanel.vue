@@ -98,7 +98,7 @@ onUnmounted(() => {
 <style scoped>
 .tree-panel {
   width: 280px;
-  background: rgba(10, 10, 15, 0.85);
+  background: rgba(10, 10, 15, var(--terminal-opacity, 0.85));
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 12px;
   display: flex;
