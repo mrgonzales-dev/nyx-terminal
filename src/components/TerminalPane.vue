@@ -21,9 +21,7 @@
         </button>
       </div>
     </div>
-    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal">
-      <div class="custom-cursor" ref="customCursor"></div>
-    </div>
+    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal"></div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
       <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
@@ -240,6 +238,23 @@ onMounted(() => {
   forceBlockCursor()
   cursorInterval = setInterval(forceBlockCursor, 100)
 
+  // Create custom cursor and append to body
+  const cursorEl = document.createElement('div')
+  cursorEl.className = 'custom-cursor'
+  cursorEl.id = `custom-cursor-${props.id}`
+  // Force inline styles to ensure visibility
+  cursorEl.style.position = 'fixed'
+  cursorEl.style.width = '30px'
+  cursorEl.style.height = '40px'
+  cursorEl.style.backgroundColor = '#ffff00'
+  cursorEl.style.border = '5px solid #000000'
+  cursorEl.style.boxShadow = '0 0 20px #ffff00, 0 0 40px #ffff00'
+  cursorEl.style.zIndex = '10000'
+  cursorEl.style.pointerEvents = 'none'
+  cursorEl.style.transition = 'all 0.05s ease'
+  document.body.appendChild(cursorEl)
+  customCursor.value = cursorEl
+
   // Custom cursor positioning
   const updateCustomCursor = () => {
     const cursor = terminalRef.value?.querySelector('.xterm-cursor')
@@ -248,6 +263,9 @@ onMounted(() => {
       const rect = cursor.getBoundingClientRect()
       custom.style.left = rect.left + 'px'
       custom.style.top = rect.top + 'px'
+      // Pulse effect
+      const time = Date.now() / 1000
+      custom.style.opacity = 0.5 + 0.5 * Math.sin(time * Math.PI * 2)
     }
   }
   updateCustomCursor()
@@ -288,6 +306,10 @@ onUnmounted(() => {
   // Clear cursor intervals
   if (cursorInterval) clearInterval(cursorInterval)
   if (customCursorInterval) clearInterval(customCursorInterval)
+  // Remove custom cursor from body
+  if (customCursor.value) {
+    document.body.removeChild(customCursor.value)
+  }
 })
 </script>
 
@@ -450,11 +472,5 @@ onUnmounted(() => {
   z-index: 10000;
   pointer-events: none;
   transition: all 0.05s ease;
-  animation: cursor-pulse 1s infinite;
-}
-
-@keyframes cursor-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
 }
 </style>
