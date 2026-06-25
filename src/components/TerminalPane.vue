@@ -224,33 +224,6 @@ onMounted(() => {
     emit('focus', props.id)
   })
 
-  // Keyboard shortcuts: Ctrl+Shift+C copy, Ctrl+Shift+V paste
-  term.attachCustomKeyEventHandler((ev) => {
-    if (ev.type !== 'keydown') return true
-
-    // Ctrl+Shift+C → Copy
-    if (ev.ctrlKey && ev.shiftKey && (ev.key === 'C' || ev.key === 'c')) {
-      if (term.hasSelection()) {
-        const selection = term.getSelection()
-        if (selection && selection !== lastClipboardText) {
-          lastClipboardText = selection
-          navigator.clipboard.writeText(selection).catch(() => {})
-        }
-      }
-      return false
-    }
-
-    // Ctrl+Shift+V → Paste
-    if (ev.ctrlKey && ev.shiftKey && (ev.key === 'V' || ev.key === 'v')) {
-      navigator.clipboard.readText().then((text) => {
-        if (text) term.paste(text)
-      }).catch(() => {})
-      return false
-    }
-
-    return true
-  })
-
   connectWs()
 
   term.onData((data) => {
@@ -412,5 +385,14 @@ onUnmounted(() => {
 .reconnect-btn:hover {
   background: rgba(248, 113, 113, 0.3);
   color: #fff;
+}
+
+/* Force block cursor visibility for nvim */
+.terminal-wrapper :deep(.xterm-cursor) {
+  background-color: #00ff00 !important;
+  color: #000000 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 </style>
