@@ -6,7 +6,7 @@ let mainWindow = null
 let tray = null
 let serverProcess = null
 
-const DEFAULT_PORT = 2400
+const DEFAULT_PORT = 2800
 const isDev = process.env.NODE_ENV === 'development'
 
 function startServer() {
