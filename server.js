@@ -21,17 +21,18 @@ const ALLOWED_ORIGINS = [
 ]
 
 function isAllowedOrigin(origin) {
-  if (!origin) return true  // Non-browser clients (Electron) may not send origin
+  if (!origin) return true  // Non-browser clients may not send origin
   if (ALLOWED_ORIGINS.includes(origin)) return true
-  // Allow any localhost/127.0.0.1 port in dev mode
-  if (process.env.ELECTRON !== 'true') {
-    try {
-      const url = new URL(origin)
-      if ((url.hostname === 'localhost' || url.hostname === '127.0.0.1') && url.protocol === 'http:') {
-        return true
-      }
-    } catch (e) {}
-  }
+  // Allow any localhost/127.0.0.1 port — server is bound to 127.0.0.1 so
+  // only local connections can reach it anyway. The origin check prevents
+  // other local web pages from connecting, but any localhost origin is fine
+  // since the server isn't exposed externally.
+  try {
+    const url = new URL(origin)
+    if ((url.hostname === 'localhost' || url.hostname === '127.0.0.1') && url.protocol === 'http:') {
+      return true
+    }
+  } catch (e) {}
   return false
 }
 

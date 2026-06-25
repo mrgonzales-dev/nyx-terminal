@@ -2,8 +2,9 @@
   <Banner :opacity="opacity" @update:opacity="opacity = $event" />
   <main class="main-content">
     <div class="terminals-area">
-      <ResizablePanels 
-        :items="terminals" 
+      <ResizablePanels
+        :items="terminals"
+        :direction="splitDirection"
         @resize="onPanelsResize"
       >
         <template #default="{ item }">
@@ -15,6 +16,8 @@
             :ref="el => setTerminalRef(item.id, el)"
             @close="closeTerminal"
             @rename="renameTerminal"
+            @split="splitTerminal"
+            @focus="setActiveTerminal"
           />
         </template>
       </ResizablePanels>
@@ -28,6 +31,7 @@
     :treeOpen="treeOpen"
     @toggle-tree="treeOpen = !treeOpen"
     @add-terminal="addTerminal"
+    @split="splitActiveTerminal"
     @save="saveSession"
   />
 </template>
@@ -46,8 +50,9 @@ const { loadSession, saveSession: save } = useSession()
 const terminals = ref([])
 const treeOpen = ref(false)
 const opacity = ref(85)
+const splitDirection = ref('horizontal')  // 'horizontal' or 'vertical'
+const activeTerminalId = ref(null)
 const terminalRefs = ref({})
-// Use a persistent counter that won't reset on remount or collide with saved IDs
 let terminalCounter = 0
 
 function setTerminalRef(id, el) {
@@ -58,7 +63,7 @@ function setTerminalRef(id, el) {
   }
 }
 
-// Debounced resize handler — avoids flooding xterm fit() on every mousemove
+// Debounced resize handler
 let resizeTimer = null
 function onPanelsResize() {
   if (resizeTimer) clearTimeout(resizeTimer)
@@ -72,11 +77,13 @@ function onPanelsResize() {
 }
 
 function addTerminal(cwd = null, name = null) {
+  const id = ++terminalCounter
   terminals.value.push({
-    id: ++terminalCounter,
+    id,
     name: name || `Terminal ${terminalCounter}`,
     cwd
   })
+  activeTerminalId.value = id
 }
 
 // Expose addTerminal to window for Electron tray menu integration
@@ -89,6 +96,10 @@ function closeTerminal(id) {
   const index = terminals.value.findIndex(t => t.id === id)
   if (index !== -1) {
     terminals.value.splice(index, 1)
+    // Update active terminal if we closed the active one
+    if (activeTerminalId.value === id) {
+      activeTerminalId.value = terminals.value[0]?.id || null
+    }
   }
 }
 
@@ -99,30 +110,64 @@ function renameTerminal(id, name) {
   }
 }
 
+function setActiveTerminal(id) {
+  activeTerminalId.value = id
+}
+
+// Split the active terminal in the given direction
+function splitActiveTerminal(direction) {
+  if (!activeTerminalId.value) {
+    // No active terminal — just add a new one
+    splitDirection.value = direction
+    addTerminal()
+    return
+  }
+  splitDirection.value = direction
+  // Add new terminal next to the active one
+  const activeIndex = terminals.value.findIndex(t => t.id === activeTerminalId.value)
+  const newId = ++terminalCounter
+  const newTerm = {
+    id: newId,
+    name: `Terminal ${terminalCounter}`,
+    cwd: null
+  }
+  if (activeIndex !== -1) {
+    terminals.value.splice(activeIndex + 1, 0, newTerm)
+  } else {
+    terminals.value.push(newTerm)
+  }
+  activeTerminalId.value = newId
+}
+
+// Split a specific terminal (from TerminalPane header)
+function splitTerminal(id, direction) {
+  activeTerminalId.value = id
+  splitActiveTerminal(direction)
+}
+
 async function saveSession() {
   await save({
     terminals: terminals.value.map(t => ({ id: t.id, name: t.name, cwd: t.cwd })),
     treeOpen: treeOpen.value,
-    opacity: opacity.value
+    opacity: opacity.value,
+    splitDirection: splitDirection.value
   })
 }
 
-// Debounced auto-save — only fires when state actually changes, not on a timer
+// Debounced auto-save
 let saveTimer = null
 let sessionLoaded = false
 function scheduleSave() {
-  if (!sessionLoaded) return  // Don't save before initial load completes
+  if (!sessionLoaded) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(saveSession, 1000)
 }
 
-// Watch for state changes and debounce-save
-watch([terminals, treeOpen, opacity], scheduleSave, { deep: true })
+watch([terminals, treeOpen, opacity, splitDirection], scheduleSave, { deep: true })
 
 onMounted(async () => {
   const session = await loadSession()
 
-  // Seed terminalCounter from saved session to avoid ID collisions
   if (session.terminals && session.terminals.length > 0) {
     const maxId = Math.max(...session.terminals.map(t => t.id || 0))
     terminalCounter = maxId
@@ -133,6 +178,7 @@ onMounted(async () => {
 
   treeOpen.value = session.treeOpen || false
   opacity.value = session.opacity ?? 85
+  splitDirection.value = session.splitDirection || 'horizontal'
   sessionLoaded = true
 })
 

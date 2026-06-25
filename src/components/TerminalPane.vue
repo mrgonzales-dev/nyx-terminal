@@ -1,6 +1,6 @@
 <template>
-  <div class="terminal-container" @click="focusTerminal">
-    <div class="terminal-header">
+  <div class="terminal-container" @click="focusTerminal" @contextmenu="onContextMenu">
+    <div class="terminal-header" @click.stop="$emit('focus', id)">
       <input
         class="terminal-title"
         :value="name"
@@ -10,13 +10,16 @@
         @blur="editing = false"
         spellcheck="false"
       />
-      <button
-        v-if="canClose"
-        class="terminal-close"
-        @click.stop="$emit('close', id)"
-      >
-        &times;
-      </button>
+      <div class="terminal-actions">
+        <SplitButton @split="$emit('split', id, $event)" />
+        <button
+          v-if="canClose"
+          class="terminal-close"
+          @click.stop="$emit('close', id)"
+        >
+          &times;
+        </button>
+      </div>
     </div>
     <div class="terminal-wrapper" ref="terminalRef"></div>
     <div v-if="disconnected" class="terminal-disconnected">
@@ -31,6 +34,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
+import SplitButton from './SplitButton.vue'
 import 'xterm/css/xterm.css'
 
 const props = defineProps({
@@ -40,7 +44,7 @@ const props = defineProps({
   canClose: { type: Boolean, default: true }
 })
 
-const emit = defineEmits(['close', 'rename'])
+const emit = defineEmits(['close', 'rename', 'split', 'focus'])
 
 const terminalRef = ref(null)
 const disconnected = ref(false)
@@ -92,7 +96,22 @@ const terminalConfig = {
 }
 
 function focusTerminal() {
+  emit('focus', id)
   term?.focus()
+}
+
+// Right-click: copy if selection, paste if no selection
+function onContextMenu(e) {
+  e.preventDefault()
+  e.stopPropagation()
+  if (term && term.hasSelection()) {
+    navigator.clipboard.writeText(term.getSelection()).catch(() => {})
+    term.clearSelection()
+  } else if (term) {
+    navigator.clipboard.readText().then((text) => {
+      if (text) term.paste(text)
+    }).catch(() => {})
+  }
 }
 
 function fit() {
@@ -168,6 +187,29 @@ onMounted(() => {
   term.loadAddon(fitAddon)
   term.loadAddon(webLinksAddon)
   term.open(terminalRef.value)
+
+  // Keyboard shortcuts: Ctrl+Shift+C copy, Ctrl+Shift+V paste
+  term.attachCustomKeyEventHandler((ev) => {
+    if (ev.type !== 'keydown') return true
+
+    // Ctrl+Shift+C → Copy
+    if (ev.ctrlKey && ev.shiftKey && (ev.key === 'C' || ev.key === 'c')) {
+      if (term.hasSelection()) {
+        navigator.clipboard.writeText(term.getSelection()).catch(() => {})
+      }
+      return false
+    }
+
+    // Ctrl+Shift+V → Paste
+    if (ev.ctrlKey && ev.shiftKey && (ev.key === 'V' || ev.key === 'v')) {
+      navigator.clipboard.readText().then((text) => {
+        if (text) term.paste(text)
+      }).catch(() => {})
+      return false
+    }
+
+    return true
+  })
 
   connectWs()
 
@@ -252,6 +294,12 @@ onUnmounted(() => {
   color: #c4b5fd;
   background: rgba(167, 139, 250, 0.1);
   border-color: rgba(167, 139, 250, 0.4);
+}
+
+.terminal-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .terminal-close {

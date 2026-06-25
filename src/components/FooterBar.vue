@@ -18,6 +18,8 @@
       New Terminal
     </button>
     
+    <SplitButton label="Split" @split="$emit('split', $event)" />
+    
     <button 
       class="footer-btn" 
       :class="{ active: saving }"
@@ -35,12 +37,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import SplitButton from './SplitButton.vue'
 
 defineProps({
   treeOpen: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['toggle-tree', 'add-terminal', 'save'])
+const emit = defineEmits(['toggle-tree', 'add-terminal', 'save', 'split'])
 
 const saving = ref(false)
 
@@ -100,6 +103,41 @@ async function handleSave() {
 }
 
 .footer-btn svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+/* SplitButton styled as footer button */
+.split-container :deep(.split-btn) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.split-container :deep(.split-btn:hover) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.split-container :deep(.split-btn.active) {
+  background: rgba(167, 139, 250, 0.2);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #c4b5fd;
+}
+
+.split-container :deep(.split-btn svg) {
   width: 16px;
   height: 16px;
   opacity: 0.8;
