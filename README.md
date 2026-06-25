@@ -1,13 +1,13 @@
 # Nyx
 
-A web-based terminal with Hermes background. Access your real terminal from the browser with full filesystem access.
+A web-based terminal. Access your real terminal from the browser with full filesystem access.
 
 ![Sample](readme_src/sample.png)
 
 ## Features
 
 - **Real PTY**: Full terminal emulation with node-pty
-- **HUD Background**: Dark theme with grid pattern and gradient beams (Hermes-style)
+- **HUD Background**: Dark theme with grid pattern and gradient beams
 - **Neon Colors**: Cyan/green color scheme for that techy feel
 - **Full Access**: Complete filesystem access from browser
 - **Responsive**: Auto-resizes to fit window
