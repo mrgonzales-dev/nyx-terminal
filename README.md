@@ -21,7 +21,14 @@ npm install
 
 ## Usage
 
+**Development:**
 ```bash
+npm run dev
+```
+
+**Production:**
+```bash
+npm run build
 npm start
 ```
 
@@ -29,7 +36,7 @@ Then open http://localhost:3000 in your browser.
 
 ## Customization
 
-Edit `public/index.html` to customize:
+Edit `src/App.vue` to customize:
 - Background colors and gradients
 - Grid pattern
 - Terminal colors (xterm theme)
@@ -42,5 +49,5 @@ Edit `public/index.html` to customize:
 ## Tech Stack
 
 - **Backend**: Node.js + Express + node-pty + WebSocket
-- **Frontend**: @xterm/xterm + vanilla JS
+- **Frontend**: Vue 3 + Vite + @xterm/xterm
 - **Styling**: CSS with gradients and grid patterns

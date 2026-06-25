@@ -40,8 +40,14 @@ function saveSession(data) {
   }
 }
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files (dist for production, public for assets)
+const distPath = path.join(__dirname, 'dist');
+const publicPath = path.join(__dirname, 'public');
+
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+}
+app.use(express.static(publicPath));
 app.use(express.json());
 
 // API endpoints for session
