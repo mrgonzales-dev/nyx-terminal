@@ -8,7 +8,7 @@ A web-based terminal emulator with i3-style tiling splits, Electron desktop app 
 
 - **i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Running apps (htop, nvim) survive splits — flat rendering with stable keys prevents component destruction.
 - **Real PTY**: Full terminal emulation with node-pty — not a fake terminal
-- **Split Inherits CWD**: Splitting a terminal opens the new one in the same directory via OSC 7 tracking (tmux-grade, works even with foreground apps running)
+- **Split Inherits CWD**: Splitting a terminal opens the new one in the same directory via `/proc/<pid>/cwd` (Linux kernel, reliable)
 - **Terminal Gaps**: Visual breathing room between terminals (configurable via GAP constant)
 - **Terminal Renaming**: Click the title to rename. Names persist across sessions.
 - **Active Terminal Glow**: Focused terminal gets a lighter border with purple glow
