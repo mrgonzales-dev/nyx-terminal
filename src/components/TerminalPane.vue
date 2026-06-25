@@ -21,7 +21,7 @@
         </button>
       </div>
     </div>
-    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal"></div>
+    <div class="terminal-wrapper" ref="terminalRef" tabindex="0" @click="focusTerminal"></div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
       <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
@@ -216,6 +216,12 @@ onMounted(() => {
   // Focus terminal on mousedown — xterm canvas swallows click events
   terminalRef.value.addEventListener('mousedown', () => {
     emit('focus', props.id)
+    term.focus()
+  })
+
+  // Focus terminal on keydown to ensure keyboard input works
+  terminalRef.value.addEventListener('keydown', () => {
+    term.focus()
   })
 
   connectWs()
@@ -345,6 +351,11 @@ onUnmounted(() => {
   overflow: hidden;
   min-height: 0;
   min-width: 0;
+  outline: none;
+}
+
+.terminal-wrapper:focus {
+  outline: none;
 }
 
 .terminal-disconnected {
