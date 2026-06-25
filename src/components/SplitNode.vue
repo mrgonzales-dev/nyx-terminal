@@ -23,7 +23,7 @@
     </template>
 
     <template v-else>
-      <template v-for="(child, index) in node.children" :key="index">
+      <template v-for="(child, index) in node.children" :key="child.type === 'leaf' ? 'leaf-' + child.terminalId : 'split-' + index">
         <div class="child-panel" :style="getPanelStyle(index)">
           <SplitNode
             :node="child"
