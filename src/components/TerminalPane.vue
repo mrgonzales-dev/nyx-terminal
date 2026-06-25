@@ -22,7 +22,7 @@
       </div>
     </div>
     <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal">
-      <div v-if="isActive" class="custom-cursor" ref="customCursor"></div>
+      <div class="custom-cursor" ref="customCursor"></div>
     </div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
@@ -247,8 +247,8 @@ onMounted(() => {
     if (cursor && custom) {
       const rect = cursor.getBoundingClientRect()
       const wrapperRect = terminalRef.value.getBoundingClientRect()
-      custom.style.left = (rect.left - wrapperRect.left) + 'px'
-      custom.style.top = (rect.top - wrapperRect.top) + 'px'
+      custom.style.left = (rect.left - wrapperRect.left - 5) + 'px'
+      custom.style.top = (rect.top - wrapperRect.top - 5) + 'px'
     }
   }
   updateCustomCursor()
@@ -443,13 +443,19 @@ onUnmounted(() => {
 /* Custom cursor overlay as fallback */
 .custom-cursor {
   position: absolute;
-  width: 20px;
-  height: 30px;
-  background-color: #ff0000;
-  border: 3px solid #ffffff;
-  box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
+  width: 30px;
+  height: 40px;
+  background-color: #ffff00;
+  border: 5px solid #000000;
+  box-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00;
   z-index: 10000;
   pointer-events: none;
   transition: all 0.05s ease;
+  animation: cursor-pulse 1s infinite;
+}
+
+@keyframes cursor-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>
