@@ -4,8 +4,6 @@ A web-based terminal emulator with i3-style tiling splits, Electron desktop app 
 
 ![Nyx Demo](readme_src/nyx-demo.gif)
 
-![Nyx Hero](readme_src/nyx-hero.png)
-
 ## Features
 
 - **i3-Style Tiling Splits**: Split any terminal horizontally or vertically. Nested splits supported. Each terminal gets its own resizable pane.
