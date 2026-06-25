@@ -2,14 +2,20 @@
   <Banner />
   <main class="main-content">
     <div class="terminals-area">
-      <TerminalPane
-        v-for="term in terminals"
-        :key="term.id"
-        :id="term.id"
-        :cwd="term.cwd"
-        :canClose="terminals.length > 1"
-        @close="closeTerminal"
-      />
+      <ResizablePanels 
+        :items="terminals" 
+        @resize="onPanelsResize"
+      >
+        <template #default="{ item }">
+          <TerminalPane
+            :id="item.id"
+            :cwd="item.cwd"
+            :canClose="terminals.length > 1"
+            :ref="el => setTerminalRef(item.id, el)"
+            @close="closeTerminal"
+          />
+        </template>
+      </ResizablePanels>
     </div>
     <TreePanel
       v-if="treeOpen"
@@ -30,13 +36,32 @@ import Banner from './components/Banner.vue'
 import TerminalPane from './components/TerminalPane.vue'
 import TreePanel from './components/TreePanel.vue'
 import FooterBar from './components/FooterBar.vue'
+import ResizablePanels from './components/ResizablePanels.vue'
 import { useSession } from './composables/useSession'
 
 const { loadSession, saveSession: save } = useSession()
 
 const terminals = ref([])
 const treeOpen = ref(false)
+const terminalRefs = ref({})
 let terminalCounter = 0
+
+function setTerminalRef(id, el) {
+  if (el) {
+    terminalRefs.value[id] = el
+  } else {
+    delete terminalRefs.value[id]
+  }
+}
+
+function onPanelsResize() {
+  // Refit all terminals after resize
+  Object.values(terminalRefs.value).forEach(ref => {
+    if (ref && ref.fit) {
+      ref.fit()
+    }
+  })
+}
 
 function addTerminal(cwd = null) {
   terminals.value.push({
@@ -88,7 +113,7 @@ onMounted(async () => {
 .terminals-area {
   flex: 1;
   display: flex;
-  gap: 16px;
   min-width: 0;
+  min-height: 0;
 }
 </style>

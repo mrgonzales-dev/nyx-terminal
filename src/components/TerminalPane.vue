@@ -83,6 +83,9 @@ function fit() {
   } catch (e) {}
 }
 
+// Expose fit function to parent
+defineExpose({ fit })
+
 onMounted(() => {
   term = new Terminal(terminalConfig)
   fitAddon = new FitAddon()
@@ -139,7 +142,8 @@ onUnmounted(() => {
 
 <style scoped>
 .terminal-container {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   position: relative;
   background: rgba(10, 10, 15, 0.85);
   border: 2px solid rgba(255, 255, 255, 0.4);
@@ -151,7 +155,7 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-width: 300px;
+  min-width: 200px;
 }
 
 .terminal-header {
