@@ -93,7 +93,7 @@ const terminalConfig = {
   lineHeight: 1.4,
   cursorBlink: false,
   cursorStyle: 'block',
-  cursorWidth: 8,
+  cursorWidth: 20,
   allowTransparency: true,
   scrollback: 10000,
   smoothScrollDuration: 100
@@ -226,6 +226,9 @@ onMounted(() => {
     if (cursor) {
       cursor.classList.remove('xterm-cursor-outline', 'xterm-cursor-bar', 'xterm-cursor-underline')
       cursor.classList.add('xterm-cursor-block')
+      cursor.style.width = 'auto'
+      cursor.style.minWidth = '14px'
+      cursor.style.maxWidth = '14px'
     }
   }
   // Force immediately and then periodically
@@ -409,5 +412,10 @@ onUnmounted(() => {
   outline: none !important;
   box-shadow: none !important;
   border: none !important;
+  width: auto !important;
+  min-width: 14px !important;
+  max-width: 14px !important;
+  z-index: 1000 !important;
+  position: relative !important;
 }
 </style>
