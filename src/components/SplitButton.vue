@@ -91,7 +91,7 @@ onUnmounted(() => {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.1),
     0 12px 40px rgba(0, 0, 0, 0.6);
-  z-index: 100;
+  z-index: 1000;
   white-space: nowrap;
   display: flex;
   flex-direction: column;
