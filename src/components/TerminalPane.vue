@@ -244,12 +244,12 @@ onMounted(() => {
   cursorEl.id = `custom-cursor-${props.id}`
   // Force inline styles to ensure visibility
   cursorEl.style.position = 'fixed'
-  cursorEl.style.width = '30px'
-  cursorEl.style.height = '40px'
-  cursorEl.style.backgroundColor = '#ffff00'
-  cursorEl.style.border = '5px solid #000000'
-  cursorEl.style.boxShadow = '0 0 20px #ffff00, 0 0 40px #ffff00'
-  cursorEl.style.zIndex = '10000'
+  cursorEl.style.width = '100px'
+  cursorEl.style.height = '100px'
+  cursorEl.style.backgroundColor = '#ff00ff'
+  cursorEl.style.border = '10px solid #00ffff'
+  cursorEl.style.boxShadow = '0 0 50px #ff00ff, 0 0 100px #ff00ff'
+  cursorEl.style.zIndex = '999999'
   cursorEl.style.pointerEvents = 'none'
   cursorEl.style.transition = 'all 0.05s ease'
   document.body.appendChild(cursorEl)
