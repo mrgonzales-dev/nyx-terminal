@@ -88,72 +88,11 @@ app.post('/api/session', (req, res) => {
   res.json({ ok: true });
 });
 
-// Get directory tree via HTTP (no PTY needed — fixes H4 process leak)
-app.get('/api/tree', (req, res) => {
-  const requestedPath = req.query.path || os.homedir();
-  const resolvedPath = path.resolve(requestedPath.replace(/^~/, os.homedir()));
-
-  // Security: prevent path traversal outside allowed roots
-  const homeDir = os.homedir();
-  const isAllowed = resolvedPath === homeDir ||
-    resolvedPath.startsWith(homeDir + path.sep) ||
-    resolvedPath === '/' ||
-    resolvedPath.startsWith('/tmp' + path.sep);
-
-  if (!isAllowed) {
-    return res.status(403).json({ error: 'Access denied: path outside allowed root' });
-  }
-
-  try {
-    const items = getTree(resolvedPath);
-    res.json({ path: resolvedPath, items });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get directory tree (internal function)
-function getTree(dirPath, depth = 0, maxDepth = 2) {
-  const items = [];
-  const resolvedPath = path.resolve(dirPath);
-
-  try {
-    const entries = fs.readdirSync(resolvedPath, { withFileTypes: true });
-
-    // Sort: directories first, then files, alphabetically
-    entries.sort((a, b) => {
-      if (a.isDirectory() && !b.isDirectory()) return -1;
-      if (!a.isDirectory() && b.isDirectory()) return 1;
-      return a.name.localeCompare(b.name);
-    });
-
-    for (const entry of entries) {
-      // Skip hidden files and common noise
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-
-      const fullPath = path.join(resolvedPath, entry.name);
-      items.push({
-        name: entry.name,
-        path: fullPath,
-        type: entry.isDirectory() ? 'dir' : 'file',
-        depth
-      });
-
-      // Recurse into directories
-      if (entry.isDirectory() && depth < maxDepth) {
-        items.push(...getTree(fullPath, depth + 1, maxDepth));
-      }
-    }
-  } catch (err) {
-    // Re-throw so the HTTP handler can send the error to the client
-    throw err;
-  }
-
-  return items;
-}
-
 // Track active PTY processes for cleanup
 const activePtys = new Set();
+
+// Map WS connection → PTY pid for getcwd lookups
+const wsPtyMap = new Map();
 
 // Cleanup all PTY processes on exit
 function cleanupAllPtys() {
@@ -208,6 +147,7 @@ wss.on('connection', (ws, req) => {
   });
 
   activePtys.add(ptyProcess);
+  wsPtyMap.set(ws, ptyProcess.pid);
 
   // Send PTY output to WebSocket
   ptyProcess.on('data', (data) => {
@@ -222,22 +162,15 @@ wss.on('connection', (ws, req) => {
       const data = JSON.parse(msg);
       if (data.type === 'resize') {
         ptyProcess.resize(data.cols, data.rows);
-      } else if (data.type === 'tree') {
-        // Tree requests should use the HTTP /api/tree endpoint now.
-        // Keep backward compat but don't spawn anything new.
-        const treePath = data.path || os.homedir();
+      } else if (data.type === 'getcwd') {
+        // Read actual cwd from /proc/<pid>/cwd — no PTY pollution
         try {
-          const items = getTree(treePath);
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'tree', path: treePath, items }));
-          }
-        } catch (err) {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'tree', error: err.message }));
-          }
+          const cwd = fs.readlinkSync(`/proc/${ptyProcess.pid}/cwd`);
+          ws.send(JSON.stringify({ type: 'cwd', cwd }));
+        } catch (e) {
+          ws.send(JSON.stringify({ type: 'cwd', cwd: initialCwd }));
         }
       }
-      // getcwd handler removed — was broken and destructive (wrote pwd into PTY)
     } catch (e) {
       // Not JSON, send directly to PTY (raw terminal input)
       ptyProcess.write(msg.toString());
@@ -248,6 +181,7 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     console.log('Client disconnected');
     activePtys.delete(ptyProcess);
+    wsPtyMap.delete(ws);
     try {
       ptyProcess.kill();
     } catch (e) {
@@ -258,6 +192,7 @@ wss.on('connection', (ws, req) => {
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
     activePtys.delete(ptyProcess);
+    wsPtyMap.delete(ws);
     try {
       ptyProcess.kill();
     } catch (e) {

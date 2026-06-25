@@ -80,7 +80,7 @@ onUnmounted(() => {
 
 .split-dropdown {
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   right: 0;
   background: rgba(10, 10, 15, 0.95);
   border: 2px solid rgba(255, 255, 255, 0.4);
@@ -160,6 +160,6 @@ onUnmounted(() => {
 .slide-down-enter-from,
 .slide-down-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(-8px);
 }
 </style>

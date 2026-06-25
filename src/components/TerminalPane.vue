@@ -1,5 +1,5 @@
 <template>
-  <div class="terminal-container" @click="focusTerminal" @contextmenu="onContextMenu">
+  <div class="terminal-container" :class="{ active: isActive }" @click="focusTerminal" @contextmenu="onContextMenu">
     <div class="terminal-header" @click.stop="$emit('focus', id)">
       <input
         class="terminal-title"
@@ -21,7 +21,7 @@
         </button>
       </div>
     </div>
-    <div class="terminal-wrapper" ref="terminalRef"></div>
+    <div class="terminal-wrapper" ref="terminalRef" @click="focusTerminal"></div>
     <div v-if="disconnected" class="terminal-disconnected">
       <span>Disconnected</span>
       <button class="reconnect-btn" @click.stop="reconnect">Reconnect</button>
@@ -41,7 +41,8 @@ const props = defineProps({
   id: { type: Number, required: true },
   name: { type: String, default: '' },
   cwd: { type: String, default: null },
-  canClose: { type: Boolean, default: true }
+  canClose: { type: Boolean, default: true },
+  isActive: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'rename', 'split', 'focus'])
@@ -55,6 +56,7 @@ let ws = null
 let reconnectAttempts = 0
 let reconnectTimer = null
 let disposed = false
+let cwdResolve = null
 
 const terminalConfig = {
   theme: {
@@ -96,7 +98,7 @@ const terminalConfig = {
 }
 
 function focusTerminal() {
-  emit('focus', id)
+  emit('focus', props.id)
   term?.focus()
 }
 
@@ -143,6 +145,19 @@ function connectWs() {
   }
 
   ws.onmessage = (event) => {
+    // Try to parse as JSON (server control messages like cwd response)
+    if (typeof event.data === 'string' && event.data.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(event.data)
+        if (parsed.type === 'cwd' && cwdResolve) {
+          cwdResolve(parsed.cwd)
+          cwdResolve = null
+          return
+        }
+      } catch (e) {
+        // Not JSON — it's terminal output, write it
+      }
+    }
     term.write(event.data)
   }
 
@@ -176,8 +191,26 @@ function reconnect() {
   connectWs()
 }
 
-// Expose fit function to parent
-defineExpose({ fit })
+// Get current working directory from server (via /proc/<pid>/cwd)
+function getCwd() {
+  return new Promise((resolve) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      resolve(null)
+      return
+    }
+    cwdResolve = resolve
+    ws.send(JSON.stringify({ type: 'getcwd' }))
+    setTimeout(() => {
+      if (cwdResolve) {
+        cwdResolve(null)
+        cwdResolve = null
+      }
+    }, 2000)
+  })
+}
+
+// Expose fit and getCwd to parent
+defineExpose({ fit, getCwd })
 
 onMounted(() => {
   term = new Terminal(terminalConfig)
@@ -187,6 +220,11 @@ onMounted(() => {
   term.loadAddon(fitAddon)
   term.loadAddon(webLinksAddon)
   term.open(terminalRef.value)
+
+  // Focus terminal on mousedown — xterm canvas swallows click events
+  terminalRef.value.addEventListener('mousedown', () => {
+    emit('focus', props.id)
+  })
 
   // Keyboard shortcuts: Ctrl+Shift+C copy, Ctrl+Shift+V paste
   term.attachCustomKeyEventHandler((ev) => {
@@ -249,14 +287,27 @@ onUnmounted(() => {
   background: rgba(10, 10, 15, var(--terminal-opacity, 0.85));
   border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 12px;
-  box-shadow: 
+  box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.1),
     0 20px 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-width: 200px;
+  min-width: 0;
+  min-height: 0;
+  flex-shrink: 1;
+  flex-grow: 1;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.terminal-container.active {
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 20px rgba(167, 139, 250, 0.3),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .terminal-header {
@@ -323,6 +374,8 @@ onUnmounted(() => {
   flex: 1;
   margin: 12px;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 .terminal-disconnected {

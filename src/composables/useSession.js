@@ -4,7 +4,7 @@ export function useSession() {
       const res = await fetch('/api/session')
       return await res.json()
     } catch (e) {
-      return { terminals: [], treeOpen: false }
+      return { terminals: [] }
     }
   }
 
