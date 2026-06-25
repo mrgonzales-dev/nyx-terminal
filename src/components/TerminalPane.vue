@@ -246,9 +246,8 @@ onMounted(() => {
     const custom = customCursor.value
     if (cursor && custom) {
       const rect = cursor.getBoundingClientRect()
-      const wrapperRect = terminalRef.value.getBoundingClientRect()
-      custom.style.left = (rect.left - wrapperRect.left - 5) + 'px'
-      custom.style.top = (rect.top - wrapperRect.top - 5) + 'px'
+      custom.style.left = rect.left + 'px'
+      custom.style.top = rect.top + 'px'
     }
   }
   updateCustomCursor()
@@ -442,7 +441,7 @@ onUnmounted(() => {
 
 /* Custom cursor overlay as fallback */
 .custom-cursor {
-  position: absolute;
+  position: fixed;
   width: 30px;
   height: 40px;
   background-color: #ffff00;
