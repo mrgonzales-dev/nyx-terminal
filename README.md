@@ -2,6 +2,8 @@
 
 A web-based terminal. Access your real terminal from the browser with full filesystem access.
 
+![Sample2](readme_src/sample2.png)
+
 ![Sample](readme_src/sample.png)
 
 ## Features
