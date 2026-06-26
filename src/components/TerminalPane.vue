@@ -58,6 +58,7 @@ let reconnectTimer = null
 let disposed = false
 let clipboardWriteTimer = null
 let lastClipboardText = ''
+let resizeObserver = null
 
 const terminalConfig = {
   theme: {
@@ -122,12 +123,18 @@ function onContextMenu(e) {
   }
 }
 
+let fitTimer = null
 function fit() {
-  try {
-    fitAddon?.fit()
-  } catch (e) {
-    console.warn('Failed to fit terminal:', e)
-  }
+  // Debounce: collapse rapid resize events into one fit call
+  if (fitTimer) return
+  fitTimer = setTimeout(() => {
+    fitTimer = null
+    try {
+      fitAddon?.fit()
+    } catch (e) {
+      console.warn('Failed to fit terminal:', e)
+    }
+  }, 16) // ~60fps — one frame
 }
 
 function buildWsUrl() {
@@ -236,15 +243,22 @@ onMounted(() => {
     }
   })
 
+  // ResizeObserver fires when the terminal wrapper element actually changes
+  // size — more reliable than window.resize which fires before CSS layout
+  resizeObserver = new ResizeObserver(() => {
+    fit()
+  })
+  resizeObserver.observe(terminalRef.value)
+
   setTimeout(fit, 50)
-  window.addEventListener('resize', fit)
   term.focus()
 })
 
 onUnmounted(() => {
   disposed = true
   if (reconnectTimer) clearTimeout(reconnectTimer)
-  window.removeEventListener('resize', fit)
+  if (fitTimer) clearTimeout(fitTimer)
+  if (resizeObserver) resizeObserver.disconnect()
   if (ws) {
     try { ws.close() } catch (e) {}
   }

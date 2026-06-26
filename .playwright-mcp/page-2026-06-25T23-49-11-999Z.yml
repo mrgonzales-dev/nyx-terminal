@@ -1,0 +1,48 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: ">"
+      - generic [ref=e6]: _
+      - heading "NYX" [level=1] [ref=e7]
+      - generic [ref=e8]: terminal
+    - banner [ref=e9]:
+      - generic [ref=e10]:
+        - heading "Nyx" [level=1] [ref=e11]
+        - generic [ref=e12]: Terminal Emulator
+      - button "Settings" [ref=e14] [cursor=pointer]:
+        - img [ref=e15]
+    - main [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - textbox [ref=e22]: nyx terminal
+            - generic [ref=e23]:
+              - button "Split terminal" [ref=e25] [cursor=pointer]:
+                - img [ref=e26]
+              - button "×" [ref=e28] [cursor=pointer]
+          - generic [ref=e32]:
+            - textbox "Terminal input" [ref=e33]
+            - generic [ref=e34]:
+              - generic [ref=e36]: Direct write test - xterm.js rendering
+              - generic [ref=e38]: working?
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - textbox [ref=e52]: nyx terminal
+            - generic [ref=e53]:
+              - button "Split terminal" [ref=e55] [cursor=pointer]:
+                - img [ref=e56]
+              - button "×" [ref=e58] [cursor=pointer]
+          - generic [ref=e62]:
+            - textbox "Terminal input" [active] [ref=e63]
+            - generic [ref=e64]:
+              - generic [ref=e66]: Direct write test - xterm.js rendering
+              - generic [ref=e68]: working?
+    - contentinfo [ref=e80]:
+      - button "New Terminal" [ref=e81] [cursor=pointer]:
+        - img [ref=e82]
+        - text: New Terminal
+      - button "Save" [ref=e84] [cursor=pointer]:
+        - img [ref=e85]
+        - text: Save
+  - generic [ref=e89]: "????????????????????????????????"
+  - generic [ref=e90]: "????????????????????????????????"

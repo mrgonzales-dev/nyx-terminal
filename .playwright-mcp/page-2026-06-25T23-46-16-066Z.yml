@@ -1,0 +1,466 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "Skip to content" [ref=e4] [cursor=pointer]:
+        - /url: "#start-of-content"
+      - banner [ref=e6]:
+        - heading "Navigation Menu" [level=2] [ref=e7]
+        - generic [ref=e9]:
+          - button "Toggle navigation" [ref=e11] [cursor=pointer]
+          - link "Homepage" [ref=e17] [cursor=pointer]:
+            - /url: /
+            - img [ref=e18]
+          - generic [ref=e20]:
+            - link "Sign in" [ref=e21] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fmicrosoft%2Fnode-pty%2Fblob%2Fmain%2FREADME.md
+            - button "Appearance settings" [ref=e24] [cursor=pointer]:
+              - img
+    - main [ref=e28]:
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e32]:
+            - img [ref=e33]
+            - link "microsoft" [ref=e36] [cursor=pointer]:
+              - /url: /microsoft
+            - generic [ref=e37]: /
+            - strong [ref=e38]:
+              - link "node-pty" [ref=e39] [cursor=pointer]:
+                - /url: /microsoft/node-pty
+            - generic [ref=e40]: Public
+          - generic [ref=e41]:
+            - list:
+              - listitem [ref=e42]:
+                - link "You must be signed in to change notification settings" [ref=e43] [cursor=pointer]:
+                  - /url: /login?return_to=%2Fmicrosoft%2Fnode-pty
+                  - img [ref=e44]
+                  - text: Notifications
+              - listitem [ref=e46]:
+                - link "Fork 318" [ref=e47] [cursor=pointer]:
+                  - /url: /login?return_to=%2Fmicrosoft%2Fnode-pty
+                  - img [ref=e48]
+                  - text: Fork
+                  - generic "318" [ref=e50]
+              - listitem [ref=e51]:
+                - link "You must be signed in to star a repository" [ref=e53] [cursor=pointer]:
+                  - /url: /login?return_to=%2Fmicrosoft%2Fnode-pty
+                  - img [ref=e54]
+                  - text: Star
+                  - generic "1974 users starred this repository" [ref=e56]: 2k
+        - navigation "Repository" [ref=e57]:
+          - list [ref=e58]:
+            - listitem [ref=e59]:
+              - link "Code" [ref=e60] [cursor=pointer]:
+                - /url: /microsoft/node-pty
+                - img [ref=e61]
+                - generic [ref=e63]: Code
+            - listitem [ref=e64]:
+              - link "Issues 27" [ref=e65] [cursor=pointer]:
+                - /url: /microsoft/node-pty/issues
+                - img [ref=e66]
+                - generic [ref=e69]: Issues
+                - generic "27" [ref=e70]
+            - listitem [ref=e71]:
+              - link "Pull requests 16" [ref=e72] [cursor=pointer]:
+                - /url: /microsoft/node-pty/pulls
+                - img [ref=e73]
+                - generic [ref=e75]: Pull requests
+                - generic "16" [ref=e76]
+            - listitem [ref=e77]:
+              - link "Discussions" [ref=e78] [cursor=pointer]:
+                - /url: /microsoft/node-pty/discussions
+                - img [ref=e79]
+                - generic [ref=e81]: Discussions
+            - listitem [ref=e82]:
+              - link "Actions" [ref=e83] [cursor=pointer]:
+                - /url: /microsoft/node-pty/actions
+                - img [ref=e84]
+                - generic [ref=e86]: Actions
+            - listitem [ref=e87]:
+              - link "Projects" [ref=e88] [cursor=pointer]:
+                - /url: /microsoft/node-pty/projects
+                - img [ref=e89]
+                - generic [ref=e91]: Projects
+            - listitem [ref=e92]
+            - listitem [ref=e93]
+            - listitem [ref=e94]
+            - listitem [ref=e95]
+          - button "Additional navigation options" [ref=e99] [cursor=pointer]:
+            - img
+      - generic [ref=e110]:
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - heading "Expand file tree" [level=2] [ref=e117]:
+              - button "Expand file tree" [ref=e118] [cursor=pointer]:
+                - img [ref=e119]
+            - button "main branch" [ref=e123] [cursor=pointer]:
+              - generic [ref=e124]:
+                - generic [ref=e126]:
+                  - img [ref=e128]
+                  - generic [ref=e131]: main
+                - generic:
+                  - img
+            - generic [ref=e133]:
+              - navigation "Breadcrumbs" [ref=e134]:
+                - heading "Breadcrumbs" [level=2] [ref=e135]
+                - list [ref=e136]:
+                  - listitem [ref=e137]:
+                    - link "node-pty" [ref=e138] [cursor=pointer]:
+                      - /url: /microsoft/node-pty/tree/main
+              - generic [ref=e139]:
+                - text: /
+                - heading "README.md" [level=1] [ref=e140]
+              - button "Copy path" [ref=e141] [cursor=pointer]:
+                - img [ref=e142]
+          - generic [ref=e147]:
+            - generic [ref=e150]:
+              - img [ref=e152]
+              - combobox "Go to file" [ref=e154]
+            - button "More file actions" [ref=e155] [cursor=pointer]:
+              - img [ref=e156]
+        - generic [ref=e158]:
+          - generic [ref=e160]:
+            - heading "Latest commit" [level=2] [ref=e161]
+            - generic [ref=e164]:
+              - heading "History" [level=2] [ref=e165]
+              - link "View commit history for this file." [ref=e167] [cursor=pointer]:
+                - /url: /microsoft/node-pty/commits/main/README.md
+                - generic [ref=e168]:
+                  - generic:
+                    - img
+          - generic [ref=e170]:
+            - generic "7.91 KB" [ref=e174]: 164 lines (112 loc) · 7.91 KB
+            - generic [ref=e176]:
+              - heading "File metadata and controls" [level=2] [ref=e177]
+              - list "File view" [ref=e179]:
+                - listitem [ref=e180]:
+                  - button "Preview" [ref=e181] [cursor=pointer]:
+                    - generic [ref=e183]: Preview
+                - listitem [ref=e184]:
+                  - button "Code" [ref=e185] [cursor=pointer]:
+                    - generic [ref=e187]: Code
+                - listitem [ref=e188]:
+                  - button "Blame" [ref=e189] [cursor=pointer]:
+                    - generic [ref=e191]: Blame
+              - generic [ref=e192]:
+                - generic [ref=e194]:
+                  - link "Raw" [ref=e196] [cursor=pointer]:
+                    - /url: https://github.com/microsoft/node-pty/raw/refs/heads/main/README.md
+                    - generic [ref=e198]: Raw
+                  - button "Copy raw file" [ref=e200] [cursor=pointer]:
+                    - img [ref=e201]
+                  - button "Download raw file" [ref=e205] [cursor=pointer]:
+                    - img [ref=e206]
+                - button "Outline" [ref=e209] [cursor=pointer]:
+                  - img [ref=e210]
+            - region [ref=e213]:
+              - article [ref=e215]:
+                - generic [ref=e216]:
+                  - heading "node-pty" [level=1] [ref=e217]
+                  - 'link "Permalink: node-pty" [ref=e218] [cursor=pointer]':
+                    - /url: "#node-pty"
+                    - img [ref=e219]
+                - paragraph [ref=e221]:
+                  - link "Build Status" [ref=e222] [cursor=pointer]:
+                    - /url: https://dev.azure.com/vscode/node-pty/_build/latest?definitionId=11&branchName=main
+                    - img "Build Status" [ref=e223]
+                - paragraph [ref=e224]:
+                  - code [ref=e225]: forkpty(3)
+                  - text: bindings for node.js. This allows you to fork processes with pseudoterminal file descriptors. It returns a terminal object which allows reads and writes.
+                - paragraph [ref=e226]: "This is useful for:"
+                - list [ref=e227]:
+                  - listitem [ref=e228]:
+                    - text: Writing a terminal emulator (eg. via
+                    - link "xterm.js" [ref=e229] [cursor=pointer]:
+                      - /url: https://github.com/sourcelair/xterm.js
+                    - text: ).
+                  - listitem [ref=e230]:
+                    - text: Getting certain programs to
+                    - emphasis [ref=e231]: think
+                    - text: you're a terminal, such as when you need a program to send you control sequences.
+                - paragraph [ref=e232]:
+                  - code [ref=e233]: node-pty
+                  - text: supports Linux, macOS and Windows. Windows support is possible by utilizing the
+                  - link "Windows conpty API" [ref=e234] [cursor=pointer]:
+                    - /url: https://blogs.msdn.microsoft.com/commandline/2018/08/02/windows-command-line-introducing-the-windows-pseudo-console-conpty/
+                  - text: on Windows 1809+.
+                - blockquote [ref=e235]:
+                  - paragraph [ref=e236]:
+                    - strong [ref=e237]: "Note:"
+                    - text: Support for the
+                    - code [ref=e238]: winpty
+                    - text: library has been removed. Windows 10 version 1809 (build 18309) or later is now required.
+                - generic [ref=e239]:
+                  - heading "API" [level=2] [ref=e240]
+                  - 'link "Permalink: API" [ref=e241] [cursor=pointer]':
+                    - /url: "#api"
+                    - img [ref=e242]
+                - paragraph [ref=e244]:
+                  - text: The full API for node-pty is contained within the
+                  - link "TypeScript declaration file" [ref=e245] [cursor=pointer]:
+                    - /url: https://github.com/microsoft/node-pty/blob/main/typings/node-pty.d.ts
+                  - text: ", use the branch/tag picker in GitHub ("
+                  - code [ref=e246]: w
+                  - text: ) to navigate to the correct version of the API.
+                - generic [ref=e247]:
+                  - heading "Example Usage" [level=2] [ref=e248]
+                  - 'link "Permalink: Example Usage" [ref=e249] [cursor=pointer]':
+                    - /url: "#example-usage"
+                    - img [ref=e250]
+                - generic [ref=e252]:
+                  - generic [ref=e253]: "import * as os from 'node:os'; import * as pty from 'node-pty'; const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash'; const ptyProcess = pty.spawn(shell, [], { name: 'xterm-color', cols: 80, rows: 30, cwd: process.env.HOME, env: process.env }); ptyProcess.onData((data) => { process.stdout.write(data); }); ptyProcess.write('ls\\r'); ptyProcess.resize(100, 40); ptyProcess.write('ls\\r');"
+                  - button "Copy code to clipboard" [ref=e255] [cursor=pointer]:
+                    - img [ref=e256]
+                - generic [ref=e259]:
+                  - heading "Real-world Uses" [level=2] [ref=e260]
+                  - 'link "Permalink: Real-world Uses" [ref=e261] [cursor=pointer]':
+                    - /url: "#real-world-uses"
+                    - img [ref=e262]
+                - paragraph [ref=e264]:
+                  - code [ref=e265]: node-pty
+                  - text: "powers many different terminal emulators, including:"
+                - list [ref=e266]:
+                  - listitem [ref=e267]:
+                    - link "Microsoft Visual Studio Code" [ref=e268] [cursor=pointer]:
+                      - /url: https://code.visualstudio.com
+                  - listitem [ref=e269]:
+                    - link "Hyper" [ref=e270] [cursor=pointer]:
+                      - /url: https://hyper.is/
+                  - listitem [ref=e271]:
+                    - link "Upterm" [ref=e272] [cursor=pointer]:
+                      - /url: https://github.com/railsware/upterm
+                  - listitem [ref=e273]:
+                    - link "Script Runner" [ref=e274] [cursor=pointer]:
+                      - /url: https://github.com/ioquatix/script-runner
+                    - text: for Atom.
+                  - listitem [ref=e275]:
+                    - link "Theia" [ref=e276] [cursor=pointer]:
+                      - /url: https://github.com/theia-ide/theia
+                  - listitem [ref=e277]:
+                    - link "FreeMAN" [ref=e278] [cursor=pointer]:
+                      - /url: https://github.com/matthew-matvei/freeman
+                    - text: file manager
+                  - listitem [ref=e279]:
+                    - link "terminus" [ref=e280] [cursor=pointer]:
+                      - /url: https://atom.io/packages/terminus
+                    - text: "- An Atom plugin for providing terminals inside your Atom workspace."
+                  - listitem [ref=e281]:
+                    - link "x-terminal" [ref=e282] [cursor=pointer]:
+                      - /url: https://atom.io/packages/x-terminal
+                    - text: "- Also an Atom plugin that provides terminals inside your Atom workspace."
+                  - listitem [ref=e283]:
+                    - link "Termination" [ref=e284] [cursor=pointer]:
+                      - /url: https://atom.io/packages/termination
+                    - text: "- Also an Atom plugin that provides terminals inside your Atom workspace."
+                  - listitem [ref=e285]:
+                    - link "atom-xterm" [ref=e286] [cursor=pointer]:
+                      - /url: https://atom.io/packages/atom-xterm
+                    - text: "- Also an Atom plugin that provides terminals inside your Atom workspace."
+                  - listitem [ref=e287]:
+                    - link "electerm" [ref=e288] [cursor=pointer]:
+                      - /url: https://github.com/electerm/electerm
+                    - text: Terminal/SSH/SFTP client(Linux, macOS, Windows).
+                  - listitem [ref=e289]:
+                    - link "Extraterm" [ref=e290] [cursor=pointer]:
+                      - /url: http://extraterm.org/
+                  - listitem [ref=e291]:
+                    - link "Wetty" [ref=e292] [cursor=pointer]:
+                      - /url: https://github.com/krishnasrinivas/wetty
+                    - text: Browser based Terminal over HTTP and HTTPS
+                  - listitem [ref=e293]:
+                    - link "nomad" [ref=e294] [cursor=pointer]:
+                      - /url: https://github.com/lukebarnard1/nomad-term
+                  - listitem [ref=e295]:
+                    - link "DockerStacks" [ref=e296] [cursor=pointer]:
+                      - /url: https://github.com/sfx101/docker-stacks
+                    - text: Local LAMP/LEMP stack using Docker
+                  - listitem [ref=e297]:
+                    - link "TeleType" [ref=e298] [cursor=pointer]:
+                      - /url: https://github.com/akshaykmr/TeleType
+                    - text: ": cli tool that allows you to share your terminal online conveniently. Show off mad cli-fu, help a colleague, teach, or troubleshoot."
+                  - listitem [ref=e299]:
+                    - link "mesos-term" [ref=e300] [cursor=pointer]:
+                      - /url: https://github.com/criteo/mesos-term
+                    - text: ": A web terminal for Apache Mesos. It allows to execute commands within containers."
+                  - listitem [ref=e301]:
+                    - link "Commas" [ref=e302] [cursor=pointer]:
+                      - /url: https://github.com/CyanSalt/commas
+                    - text: ": A hackable terminal and command runner."
+                  - listitem [ref=e303]:
+                    - link "ENiGMA½ BBS Software" [ref=e304] [cursor=pointer]:
+                      - /url: https://github.com/NuSkooler/enigma-bbs
+                    - text: ": A modern BBS software with a nostalgic flair!"
+                  - listitem [ref=e305]:
+                    - link "Tinkerun" [ref=e306] [cursor=pointer]:
+                      - /url: https://github.com/tinkerun/tinkerun
+                    - text: ": A new way of running Tinker."
+                  - listitem [ref=e307]:
+                    - link "Tess" [ref=e308] [cursor=pointer]:
+                      - /url: https://tessapp.dev
+                    - text: ": Hackable, simple and rapid terminal for the new era of technology 👍"
+                  - listitem [ref=e309]:
+                    - link "NxShell" [ref=e310] [cursor=pointer]:
+                      - /url: https://nxshell.github.io/
+                    - text: ": An easy to use new terminal for Windows/Linux/MacOS platform."
+                  - listitem [ref=e311]:
+                    - link "OpenSumi" [ref=e312] [cursor=pointer]:
+                      - /url: https://github.com/opensumi/core
+                    - text: ": A framework helps you quickly build Cloud or Desktop IDE products."
+                  - listitem [ref=e313]:
+                    - link "Enjoy Git" [ref=e314] [cursor=pointer]:
+                      - /url: https://github.com/huangcs427/enjoy-git-release
+                    - text: ": A modern Git client featuring an intuitive user interface, built with Electron, Vue 3, and TypeScript."
+                  - listitem [ref=e315]:
+                    - link "Logos" [ref=e316] [cursor=pointer]:
+                      - /url: https://github.com/zixiao-labs/logos
+                    - text: ": A Modern, Lightweight Code Editor, built with Electron, Vue 3, and TypeScript."
+                - paragraph [ref=e317]:
+                  - text: Do you use node-pty in your application as well? Please open a
+                  - link "Pull Request" [ref=e318] [cursor=pointer]:
+                    - /url: https://github.com/Tyriar/node-pty/pulls
+                  - text: to include it here. We would love to have it in our list.
+                - generic [ref=e319]:
+                  - heading "Building" [level=2] [ref=e320]
+                  - 'link "Permalink: Building" [ref=e321] [cursor=pointer]':
+                    - /url: "#building"
+                    - img [ref=e322]
+                - generic [ref=e324]:
+                  - generic [ref=e325]:
+                    - generic [ref=e326]: "# Install dependencies and build C++"
+                    - text: npm install
+                    - generic [ref=e327]: "# Compile TypeScript -> JavaScript"
+                    - text: npm run build
+                  - button "Copy code to clipboard" [ref=e329] [cursor=pointer]:
+                    - img [ref=e330]
+                - generic [ref=e333]:
+                  - heading "Dependencies" [level=2] [ref=e334]
+                  - 'link "Permalink: Dependencies" [ref=e335] [cursor=pointer]':
+                    - /url: "#dependencies"
+                    - img [ref=e336]
+                - paragraph [ref=e338]:
+                  - text: Node.JS 16 or Electron 19 is required to use
+                  - code [ref=e339]: node-pty
+                  - text: . What version of node is supported is currently mostly bound to
+                  - link "whatever version Visual Studio Code is using" [ref=e340] [cursor=pointer]:
+                    - /url: https://github.com/microsoft/node-pty/issues/557#issuecomment-1332193541
+                  - text: .
+                - generic [ref=e341]:
+                  - heading "Linux (apt)" [level=3] [ref=e342]
+                  - 'link "Permalink: Linux (apt)" [ref=e343] [cursor=pointer]':
+                    - /url: "#linux-apt"
+                    - img [ref=e344]
+                - generic [ref=e346]:
+                  - generic [ref=e347]: sudo apt install -y make python build-essential
+                  - button "Copy code to clipboard" [ref=e349] [cursor=pointer]:
+                    - img [ref=e350]
+                - generic [ref=e353]:
+                  - heading "macOS" [level=3] [ref=e354]
+                  - 'link "Permalink: macOS" [ref=e355] [cursor=pointer]':
+                    - /url: "#macos"
+                    - img [ref=e356]
+                - paragraph [ref=e358]: Xcode is needed to compile the sources, this can be installed from the App Store.
+                - generic [ref=e359]:
+                  - heading "Windows" [level=3] [ref=e360]
+                  - 'link "Permalink: Windows" [ref=e361] [cursor=pointer]':
+                    - /url: "#windows"
+                    - img [ref=e362]
+                - paragraph [ref=e364]:
+                  - code [ref=e365]: npm install
+                  - text: requires some tools to be present in the system like Python and C++ compiler. Windows users can easily install them by running the following command in PowerShell as administrator. For more information see
+                  - link "https://github.com/felixrieseberg/windows-build-tools" [ref=e366] [cursor=pointer]:
+                    - /url: https://github.com/felixrieseberg/windows-build-tools
+                  - text: ":"
+                - generic [ref=e367]:
+                  - generic [ref=e368]: npm install --global --production windows-build-tools
+                  - button "Copy code to clipboard" [ref=e370] [cursor=pointer]:
+                    - img [ref=e371]
+                - paragraph [ref=e374]: "The following are also needed:"
+                - list [ref=e375]:
+                  - listitem [ref=e376]:
+                    - link "Windows SDK" [ref=e377] [cursor=pointer]:
+                      - /url: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
+                    - text: "- only the \"Desktop C++ Apps\" components are needed to be installed"
+                  - listitem [ref=e378]: "Spectre-mitigated libraries - In order to avoid the build error \"MSB8040: Spectre-mitigated libraries are required for this project\", open the Visual Studio Installer, press the Modify button, navigate to the \"Individual components\" tab, search \"Spectre\", and install an option like \"MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)\" (the exact option to install will depend on your version of Visual Studio as well as your operating system architecture)"
+                - generic [ref=e379]:
+                  - heading "Debugging" [level=2] [ref=e380]
+                  - 'link "Permalink: Debugging" [ref=e381] [cursor=pointer]':
+                    - /url: "#debugging"
+                    - img [ref=e382]
+                - paragraph [ref=e384]:
+                  - link "The wiki" [ref=e385] [cursor=pointer]:
+                    - /url: https://github.com/Microsoft/node-pty/wiki/Debugging
+                  - text: contains instructions for debugging node-pty.
+                - generic [ref=e386]:
+                  - heading "Security" [level=2] [ref=e387]
+                  - 'link "Permalink: Security" [ref=e388] [cursor=pointer]':
+                    - /url: "#security"
+                    - img [ref=e389]
+                - paragraph [ref=e391]: All processes launched from node-pty will launch at the same permission level of the parent process. Take care particularly when using node-pty inside a server that's accessible on the internet. We recommend launching the pty inside a container to protect your host machine.
+                - generic [ref=e392]:
+                  - heading "Thread Safety" [level=2] [ref=e393]
+                  - 'link "Permalink: Thread Safety" [ref=e394] [cursor=pointer]':
+                    - /url: "#thread-safety"
+                    - img [ref=e395]
+                - paragraph [ref=e397]: Note that node-pty is not thread safe so running it across multiple worker threads in node.js could cause issues.
+                - generic [ref=e398]:
+                  - heading "Flow Control" [level=2] [ref=e399]
+                  - 'link "Permalink: Flow Control" [ref=e400] [cursor=pointer]':
+                    - /url: "#flow-control"
+                    - img [ref=e401]
+                - paragraph [ref=e403]:
+                  - text: Automatic flow control can be enabled by either providing
+                  - code [ref=e404]: handleFlowControl = true
+                  - text: "in the constructor options or setting it later on:"
+                - generic [ref=e405]:
+                  - generic [ref=e406]: "const PAUSE = '\\x13'; // XOFF const RESUME = '\\x11'; // XON const ptyProcess = pty.spawn(shell, [], {handleFlowControl: true}); // flow control in action ptyProcess.write(PAUSE); // pty will block and pause the child program ... ptyProcess.write(RESUME); // pty will enter flow mode and resume the child program // temporarily disable/re-enable flow control ptyProcess.handleFlowControl = false; ... ptyProcess.handleFlowControl = true;"
+                  - button "Copy code to clipboard" [ref=e408] [cursor=pointer]:
+                    - img [ref=e409]
+                - paragraph [ref=e412]:
+                  - text: By default
+                  - code [ref=e413]: PAUSE
+                  - text: and
+                  - code [ref=e414]: RESUME
+                  - text: are XON/XOFF control codes (as shown above). To avoid conflicts in environments that use these control codes for different purposes the messages can be customized as
+                  - code [ref=e415]: "flowControlPause: string"
+                  - text: and
+                  - code [ref=e416]: "flowControlResume: string"
+                  - text: in the constructor options.
+                  - code [ref=e417]: PAUSE
+                  - text: and
+                  - code [ref=e418]: RESUME
+                  - text: are not passed to the underlying pseudoterminal if flow control is enabled.
+                - generic [ref=e419]:
+                  - heading "Troubleshooting" [level=2] [ref=e420]
+                  - 'link "Permalink: Troubleshooting" [ref=e421] [cursor=pointer]':
+                    - /url: "#troubleshooting"
+                    - img [ref=e422]
+                - generic [ref=e424]:
+                  - heading "Powershell gives error 8009001d" [level=3] [ref=e425]
+                  - 'link "Permalink: Powershell gives error 8009001d" [ref=e426] [cursor=pointer]':
+                    - /url: "#powershell-gives-error-8009001d"
+                    - img [ref=e427]
+                - blockquote [ref=e429]:
+                  - paragraph [ref=e430]: Internal Windows PowerShell error. Loading managed Windows PowerShell failed with error 8009001d.
+                - paragraph [ref=e431]:
+                  - text: This happens when PowerShell is launched with no
+                  - code [ref=e432]: SystemRoot
+                  - text: environment variable present.
+                - generic [ref=e433]:
+                  - heading "pty.js" [level=2] [ref=e434]
+                  - 'link "Permalink: pty.js" [ref=e435] [cursor=pointer]':
+                    - /url: "#ptyjs"
+                    - img [ref=e436]
+                - paragraph [ref=e438]:
+                  - text: This project is forked from
+                  - link "chjj/pty.js" [ref=e439] [cursor=pointer]:
+                    - /url: https://github.com/chjj/pty.js
+                  - text: with the primary goals being to provide better support for later Node.js versions and Windows.
+                - generic [ref=e440]:
+                  - heading "License" [level=2] [ref=e441]
+                  - 'link "Permalink: License" [ref=e442] [cursor=pointer]':
+                    - /url: "#license"
+                    - img [ref=e443]
+                - paragraph [ref=e445]:
+                  - text: Copyright (c) 2012-2015, Christopher Jeffrey (MIT License).
+                  - text: Copyright (c) 2016, Daniel Imms (MIT License).
+                  - text: Copyright (c) 2018, Microsoft Corporation (MIT License).
+  - alert [ref=e449]

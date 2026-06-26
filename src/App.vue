@@ -21,10 +21,10 @@
           :ref="(el) => { if (el) terminalRefs[cell.leaf.terminalId] = el; else delete terminalRefs[cell.leaf.terminalId] }"
           :style="{
             position: 'absolute',
-            left: cell.x + '%',
-            top: cell.y + '%',
-            width: cell.w + '%',
-            height: cell.h + '%',
+            left: 'calc(' + cell.x + '% + var(--gap))',
+            top: 'calc(' + cell.y + '% + var(--gap))',
+            width: 'calc(' + cell.w + '% - var(--gap) * 2)',
+            height: 'calc(' + cell.h + '% - var(--gap) * 2)',
             boxSizing: 'border-box'
           }"
           @close="closeTerminal"
@@ -33,6 +33,20 @@
           @focus="setActiveTerminal"
         />
       </template>
+      <div
+        v-for="(d, di) in dividers"
+        :key="'d-' + d.path.join('-') + '-' + d.idx"
+        class="resize-handle"
+        :class="'resize-' + d.direction"
+        :style="{
+          position: 'absolute',
+          left: d.direction === 'horizontal' ? d.x + '%' : 'calc(' + d.x + '% + var(--gap))',
+          top: d.direction === 'vertical' ? d.y + '%' : 'calc(' + d.y + '% + var(--gap))',
+          width: d.direction === 'horizontal' ? '6px' : 'calc(' + d.w + '% - var(--gap) * 2)',
+          height: d.direction === 'vertical' ? '6px' : 'calc(' + d.h + '% - var(--gap) * 2)'
+        }"
+        @mousedown="startResize($event, d)"
+      />
     </div>
   </main>
   <FooterBar
@@ -67,12 +81,10 @@ function termName(id) {
   return terminals.value.find(t => t.id === id)?.name || 'nyx terminal'
 }
 
-// Flatten tree to absolute-positioned cells (with gap inset)
-const GAP = 0.4 // % gap between terminals
-
+// Flatten tree to absolute-positioned cells (gap added via CSS calc)
 function flattenTree(node, x, y, w, h) {
   if (node.type === 'leaf') {
-    return [{ leaf: node, x: x + GAP, y: y + GAP, w: Math.max(0, w - GAP * 2), h: Math.max(0, h - GAP * 2) }]
+    return [{ leaf: node, x, y, w, h }]
   }
   if (!node.children || node.children.length === 0) return []
   if (node.children.length === 1) {
@@ -107,10 +119,138 @@ const flatCells = computed(() => {
   return flattenTree(layout.value, 0, 0, 100, 100)
 })
 
+// Dividers between siblings in split nodes — draggable resize handles
+const dividers = computed(() => {
+  const result = []
+  function walk(node, x, y, w, h, path) {
+    if (node.type !== 'split' || !node.children || node.children.length < 2) return
+    const sizes = node.sizes || node.children.map(() => 100 / node.children.length)
+    const total = sizes.reduce((a, b) => a + b, 0) || 100
+
+    if (node.direction === 'horizontal') {
+      let cx = x
+      for (let i = 0; i < node.children.length; i++) {
+        const cw = (w * sizes[i]) / total
+        walk(node.children[i], cx, y, cw, h, [...path, i])
+        cx += cw
+        if (i < node.children.length - 1) {
+          result.push({
+            x: cx,
+            y,
+            w: 0,
+            h,
+            direction: 'horizontal',
+            path: [...path],
+            idx: i
+          })
+        }
+      }
+    } else {
+      let cy = y
+      for (let i = 0; i < node.children.length; i++) {
+        const ch = (h * sizes[i]) / total
+        walk(node.children[i], x, cy, w, ch, [...path, i])
+        cy += ch
+        if (i < node.children.length - 1) {
+          result.push({
+            x,
+            y: cy,
+            w,
+            h: 0,
+            direction: 'vertical',
+            path: [...path],
+            idx: i
+          })
+        }
+      }
+    }
+  }
+  walk(layout.value, 0, 0, 100, 100, [])
+  return result
+})
+
 function onPanelsResize() {
   Object.values(terminalRefs.value).forEach(ref => {
     if (ref && ref.fit) ref.fit()
   })
+}
+
+// Drag-to-resize split pane dividers
+function startResize(event, divider) {
+  event.preventDefault()
+
+  const areaEl = areaRef.value
+  if (!areaEl) return
+  const areaRect = areaEl.getBoundingClientRect()
+
+  // Walk the tree using the path to find the split node's bounding box (in %)
+  let bx = 0, by = 0, bw = 100, bh = 100
+  let node = layout.value
+  for (const idx of divider.path) {
+    if (node.type !== 'split') return
+    const sizes = node.sizes || node.children.map(() => 100 / node.children.length)
+    const total = sizes.reduce((a, b) => a + b, 0) || 100
+    if (node.direction === 'horizontal') {
+      const before = sizes.slice(0, idx).reduce((a, b) => a + b, 0)
+      bx += (bw * before) / total
+      bw = (bw * sizes[idx]) / total
+    } else {
+      const before = sizes.slice(0, idx).reduce((a, b) => a + b, 0)
+      by += (bh * before) / total
+      bh = (bh * sizes[idx]) / total
+    }
+    node = node.children[idx]
+  }
+
+  // Find the split node itself via path
+  let splitNode = layout.value
+  for (const idx of divider.path) {
+    splitNode = splitNode.children[idx]
+  }
+  if (splitNode.type !== 'split') return
+
+  const startSizes = [...(splitNode.sizes || splitNode.children.map(() => 100 / splitNode.children.length))]
+  const isHorizontal = divider.direction === 'horizontal'
+  const splitPixelSize = isHorizontal
+    ? (bw / 100) * areaRect.width
+    : (bh / 100) * areaRect.height
+  const totalSize = startSizes.reduce((a, b) => a + b, 0) || 100
+  const minPct = 10 // minimum % a pane can take
+
+  function onMove(e) {
+    const deltaPx = isHorizontal ? e.clientX - event.clientX : e.clientY - event.clientY
+    const deltaPct = splitPixelSize > 0 ? (deltaPx / splitPixelSize) * totalSize : 0
+
+    const newLayout = cloneLayout(layout.value)
+    // Re-navigate in the clone
+    let target = newLayout
+    for (const idx of divider.path) {
+      target = target.children[idx]
+    }
+    if (target.type !== 'split') return
+
+    const a = startSizes[divider.idx] + deltaPct
+    const b = startSizes[divider.idx + 1] - deltaPct
+
+    // Clamp both children to minimum
+    if (a < minPct || b < minPct) return
+
+    target.sizes[divider.idx] = a
+    target.sizes[divider.idx + 1] = b
+
+    layout.value = newLayout
+    nextTick(onPanelsResize)
+  }
+
+  function onUp() {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+    document.body.style.cursor = ''
+  }
+
+  document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize'
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
 }
 
 function createTerminal(name = null) {
@@ -404,6 +544,7 @@ onUnmounted(() => {
 }
 
 .terminals-area {
+  --gap: 4px;
   flex: 1;
   position: relative;
   min-width: 0;
@@ -480,5 +621,36 @@ onUnmounted(() => {
 
 .loader-fade-leave-to {
   opacity: 0;
+}
+
+/* Resize handles between split panes */
+.resize-handle {
+  z-index: 50;
+  user-select: none;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 1px;
+  background: rgba(167, 139, 250,0.2);
+  filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.resize-handle:hover::after {
+  opacity: 1;
+}
+
+.resize-horizontal {
+  cursor: col-resize;
+  transform: translateX(-50%);
+}
+
+.resize-vertical {
+  cursor: row-resize;
+  transform: translateY(-50%);
 }
 </style>
