@@ -151,8 +151,12 @@ wss.on('connection', (ws, req) => {
   ws.on('message', (msg) => {
     try {
       const data = JSON.parse(msg);
-      if (data.type === 'resize') {
+      // Only treat as resize if it's an object with type property
+      if (data && typeof data === 'object' && data.type === 'resize') {
         ptyProcess.resize(data.cols, data.rows);
+      } else {
+        // Valid JSON but not a resize command (e.g., plain number), send as raw input
+        ptyProcess.write(msg.toString());
       }
     } catch (e) {
       // Not JSON, send directly to PTY (raw terminal input)
