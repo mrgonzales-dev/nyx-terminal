@@ -484,7 +484,7 @@ let sessionLoaded = false
 function scheduleSave() {
   if (!sessionLoaded) return
   if (saveTimer) clearTimeout(saveTimer)
-  saveTimer = setTimeout(saveSession, 1000)
+  saveTimer = setTimeout(saveSession, 500)
 }
 
 watch([terminals, opacity, layout], scheduleSave, { deep: true })
